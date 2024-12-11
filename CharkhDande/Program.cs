@@ -11,7 +11,7 @@ services.AddTransient<Repo>();
 // Build the service provider
 var serviceProvider = services.BuildServiceProvider();
 
-var monitorTask = new MonitorStep()
+var monitorTask = new MonitorStep("monitor 1")
 {
     Condition = new LambdaCondition(ctx => ctx.Get<bool>("jobCompleted")),
     PollingInterval = TimeSpan.FromSeconds(1),
@@ -38,15 +38,19 @@ var workflow = new Workflow(serviceProvider)
 
 workflow.Context.Set("jobCompleted", false);
 
-workflow.StartTask = monitorTask;
+workflow.StartStep = monitorTask;
 // Link the Workflow
 var task3 = new ConditionalStep("third");
 var task2 = new ConditionalStep("second")
 {
-    GetNext = ctx => task3
+    Routes = [ new ConditionalRoute(){
+        GetNext = ctx => task3 }
+    ]
 };
 
-task3.GetNext = ctx => task2;
+task3.Routes = [new ConditionalRoute {
+    GetNext = ctx => task2
+}];
 
 var task1 = new ConditionalStep("first")
 {
@@ -69,16 +73,16 @@ var task1 = new ConditionalStep("first")
         new LambdaAction(ctx =>
             ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("dispatch an event"))
     },
-    GetNext = ctx => task2 // Next task resolver
+    Routes = [new ConditionalRoute() { GetNext = ctx => task2 }]
 };
-monitorTask.GetNext = ctx => task1;
+monitorTask.Routes = [new ConditionalRoute { GetNext = ctx => task1 }];
 // Run the Workflow
 workflow.Context.Set("age", 10);
 workflow.Context.Set("doc_id", 1);
 
 var tasks = new List<Task>()
 {
-Task.Run(() => workflow.Run()),
+Task.Run(workflow.Run),
 
 
 Task.Run(async () =>

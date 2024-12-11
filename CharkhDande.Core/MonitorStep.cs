@@ -1,7 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
-public class MonitorStep : IWorkflowStep
+
+public class MonitorStep : WorkflowStepBase
 {
-    public Func<WorkflowContext, IWorkflowStep> GetNext { get; set; }
+    public MonitorStep(string id) : base(id)
+    {
+    }
 
     public string Id { get; }
     public ICondition Condition { get; set; }
@@ -10,7 +13,7 @@ public class MonitorStep : IWorkflowStep
     public List<IAction> OnTimeoutActions { get; set; } = new();
     public List<IAction> OnSuccessActions { get; set; } = new();
 
-    public void Execute(WorkflowContext context)
+    public override void Execute(WorkflowContext context)
     {
         var startTime = DateTime.UtcNow;
         bool conditionMet = false;

@@ -3,5 +3,5 @@ public interface IWorkflowStep
 {
     string Id { get; }
     void Execute(WorkflowContext context);
-    Func<WorkflowContext, IWorkflowStep> GetNext { get; }
+    IEnumerable<IRoute> GetRoutes();
 }
