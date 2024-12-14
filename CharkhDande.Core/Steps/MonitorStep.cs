@@ -1,12 +1,10 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-public class MonitorStep : WorkflowStepBase
+﻿
+public class MonitorStep : StepBase
 {
     public MonitorStep(string id) : base(id)
     {
     }
 
-    public string Id { get; }
     public ICondition Condition { get; set; }
     public TimeSpan PollingInterval { get; set; } = TimeSpan.FromSeconds(1);
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
@@ -16,6 +14,8 @@ public class MonitorStep : WorkflowStepBase
     public override void Execute(WorkflowContext context)
     {
         var startTime = DateTime.UtcNow;
+        State = StepState.RUNNING;
+        context.workflowHistoryWriter.Write(Id, StepHistoryType.EXECUTE_STARTED, true, "");
         bool conditionMet = false;
 
         while (DateTime.UtcNow - startTime < Timeout)
@@ -23,6 +23,7 @@ public class MonitorStep : WorkflowStepBase
             if (Condition.Evaluate(context))
             {
                 conditionMet = true;
+                State = StepState.FINISHED;
                 break;
             }
             Console.WriteLine("monitor iteration...");

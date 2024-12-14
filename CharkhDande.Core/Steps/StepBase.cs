@@ -1,10 +1,11 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-public abstract class WorkflowStepBase : IWorkflowStep
+﻿public abstract class StepBase : IWorkflowStep
 {
     public string Id { get; init; }
     public IEnumerable<IRoute> Routes { get; set; }
-    protected WorkflowStepBase(string id)
+
+    public StepState State { get; set; }
+
+    protected StepBase(string id)
     {
         Id = id;
     }

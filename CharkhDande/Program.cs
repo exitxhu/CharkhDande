@@ -13,7 +13,7 @@ var serviceProvider = services.BuildServiceProvider();
 
 var monitorTask = new MonitorStep("monitor 1")
 {
-    Condition = new LambdaCondition(ctx => ctx.Get<bool>("jobCompleted")),
+    Condition = new ExpressionCondition(ctx => ctx.Get<bool>("jobCompleted")),
     PollingInterval = TimeSpan.FromSeconds(1),
     Timeout = TimeSpan.FromSeconds(10),
     OnSuccessActions = new List<IAction>
@@ -28,7 +28,10 @@ var monitorTask = new MonitorStep("monitor 1")
 
 
 // Resolve the main application class and run it
-var workflow = new Workflow(serviceProvider)
+var workflow = new Workflow(serviceProvider, new ConfigurableLoopDetectionPolicy()
+{
+    
+})
 {
     Context = new WorkflowContext
     {
@@ -36,20 +39,43 @@ var workflow = new Workflow(serviceProvider)
     }
 };
 
+var conditionX = new ConditionX();
+var conditionY = new ConditionY();
+var conditionZ = new ConditionZ();
+var conditionM = new ConditionX();
+var conditionN = new ExpressionCondition(ctx => 1 == 1);
+
+var groupedCondition = conditionX.And(conditionY).Or(conditionZ.Or(conditionM.And(conditionN)));
+
+
 workflow.Context.Set("jobCompleted", false);
+workflow.Context.Set("X", false);
+workflow.Context.Set("Y", true);
+workflow.Context.Set("Z", true);
+
+bool result = groupedCondition.Evaluate(workflow.Context);
 
 workflow.StartStep = monitorTask;
 // Link the Workflow
-var task3 = new ConditionalStep("third");
+var task3 = new ConditionalStep("third")
+{
+    _actions = [
+        new LambdaAction(ctx => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("task 3 runs"))
+
+        ]
+};
 var task2 = new ConditionalStep("second")
 {
     Routes = [ new ConditionalRoute(){
         GetNext = ctx => task3 }
-    ]
+    ],
+    _actions = [
+        new LambdaAction(ctx => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("task 2 runs"))
+        ]
 };
 
 task3.Routes = [new ConditionalRoute {
-    GetNext = ctx => task2
+    GetNext = ctx => null
 }];
 
 var task1 = new ConditionalStep("first")
@@ -62,7 +88,7 @@ var task1 = new ConditionalStep("first")
             var ent = repo.Get(id);
            return ent.id %2 == 1;
         }),
-        new LambdaCondition(ctx => ctx.Get<int>("age") > 5)
+        new ExpressionCondition(ctx => ctx.Get<int>("age") > 5)
     },
     _actions = new List<IAction>
     {
@@ -87,46 +113,18 @@ Task.Run(workflow.Run),
 
 Task.Run(async () =>
 {
-    await Task.Delay(4500);
+    await Task.Delay(1500);
     workflow.Context.Set("jobCompleted", true);
 })
 };
 Task.WhenAll(tasks).Wait();
 
 
+var histores = workflow.GetHistory();
 
+var js = workflow.ExportWorkFlow();
 
-
-public class LambdaCondition : ICondition
-{
-    private readonly Func<WorkflowContext, bool> _predicate;
-
-    public LambdaCondition(Func<WorkflowContext, bool> predicate)
-    {
-        _predicate = predicate;
-    }
-
-    public bool Evaluate(WorkflowContext context)
-    {
-        return _predicate(context);
-    }
-}
-
-public class LambdaAction : IAction
-{
-    private readonly Action<WorkflowContext> _action;
-
-    public LambdaAction(Action<WorkflowContext> action)
-    {
-        _action = action;
-    }
-
-    public void Execute(WorkflowContext context)
-    {
-        _action(context);
-    }
-}
-
+var t = 0;
 public interface IMessageService
 {
     void SendMessage(string message);
@@ -150,4 +148,19 @@ public class Repo
 public class Entity
 {
     public int id { get; set; }
+}
+
+public class ConditionX : ICondition
+{
+    public bool Evaluate(WorkflowContext context) => context.Get<bool>("X");
+}
+
+public class ConditionY : ICondition
+{
+    public bool Evaluate(WorkflowContext context) => context.Get<bool>("Y");
+}
+
+public class ConditionZ : ICondition
+{
+    public bool Evaluate(WorkflowContext context) => context.Get<bool>("Z");
 }
