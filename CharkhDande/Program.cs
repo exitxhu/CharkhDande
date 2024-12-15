@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿
 using Microsoft.Extensions.DependencyInjection;
 
 Console.WriteLine("Hello, World!");
@@ -11,6 +11,21 @@ services.AddTransient<Repo>();
 // Build the service provider
 var serviceProvider = services.BuildServiceProvider();
 
+var emailActionKey = "sendEmailOnCondition";
+ActionRegistry.Register(emailActionKey, (ctx, init) =>
+{
+    Console.WriteLine("sendEmail");
+    var T = Random.Shared.Next(0, 100) % 3 == 2;
+    if (T)
+        ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("email someone");
+});
+
+ActionRegistry.Register("jobAction", (ctx, init) => Console.WriteLine("Job completed successfully."));
+ActionRegistry.Register("jobTimeOutAction", (ctx, init) => Console.WriteLine("Job completion timed out."));
+
+var lambdaAction = new LambdaAction(emailActionKey);
+
+
 var monitorTask = new MonitorStep("monitor 1")
 {
     Condition = new ExpressionCondition(ctx => ctx.Get<bool>("jobCompleted")),
@@ -18,11 +33,11 @@ var monitorTask = new MonitorStep("monitor 1")
     Timeout = TimeSpan.FromSeconds(10),
     OnSuccessActions = new List<IAction>
     {
-        new LambdaAction(ctx => Console.WriteLine("Job completed successfully.")),
+        new LambdaAction("jobAction"),
     },
     OnTimeoutActions = new List<IAction>
     {
-        new LambdaAction(ctx => Console.WriteLine("Job completion timed out.")),
+        new LambdaAction("jobTimeOutAction"),
     },
 };
 
@@ -30,7 +45,7 @@ var monitorTask = new MonitorStep("monitor 1")
 // Resolve the main application class and run it
 var workflow = new Workflow(serviceProvider, new ConfigurableLoopDetectionPolicy()
 {
-    
+
 })
 {
     Context = new WorkflowContext
@@ -57,27 +72,30 @@ bool result = groupedCondition.Evaluate(workflow.Context);
 
 workflow.StartStep = monitorTask;
 // Link the Workflow
+
+ActionRegistry.Register("taskRun", (ctx, init) => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage($"task {init.InitiatorId} runs"));
+
 var task3 = new ConditionalStep("third")
 {
-    _actions = [
-        new LambdaAction(ctx => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("task 3 runs"))
-
-        ]
+    _actions = [new LambdaAction("taskRun")]
 };
 var task2 = new ConditionalStep("second")
 {
     Routes = [ new ConditionalRoute(){
-        GetNext = ctx => task3 }
+        GetNext = ctx => task3,
+        Id = "RT1"},
     ],
-    _actions = [
-        new LambdaAction(ctx => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("task 2 runs"))
-        ]
+    _actions = [new LambdaAction("taskRun")]
 };
 
 task3.Routes = [new ConditionalRoute {
+    Id ="EndR",
     GetNext = ctx => null
 }];
-
+ActionRegistry.Register("jobTriggerKey", (ctx, init) =>
+        ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("trigger a job"));
+ActionRegistry.Register("dispatchEventKey", (ctx, init) =>
+        ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("dispatch an event"));
 var task1 = new ConditionalStep("first")
 {
     _conditions = new List<ICondition>
@@ -92,16 +110,14 @@ var task1 = new ConditionalStep("first")
     },
     _actions = new List<IAction>
     {
-        new LambdaAction(ctx =>
-            ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("email someone")),
-        new LambdaAction(ctx =>
-            ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("trigger a job")),
-        new LambdaAction(ctx =>
-            ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("dispatch an event"))
-    },
-    Routes = [new ConditionalRoute() { GetNext = ctx => task2 }]
+        new LambdaAction(emailActionKey) ,
+    new LambdaAction("jobTriggerKey"),
+    new LambdaAction("dispatchEventKey")
+    }
+,
+    Routes = [new ConditionalRoute() { Id = "T2R", GetNext = ctx => task2 }]
 };
-monitorTask.Routes = [new ConditionalRoute { GetNext = ctx => task1 }];
+monitorTask.Routes = [new ConditionalRoute { Id = "T1R", GetNext = ctx => task1 }];
 // Run the Workflow
 workflow.Context.Set("age", 10);
 workflow.Context.Set("doc_id", 1);
@@ -153,14 +169,29 @@ public class Entity
 public class ConditionX : ICondition
 {
     public bool Evaluate(WorkflowContext context) => context.Get<bool>("X");
+
+    public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class ConditionY : ICondition
 {
     public bool Evaluate(WorkflowContext context) => context.Get<bool>("Y");
+
+    public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class ConditionZ : ICondition
 {
     public bool Evaluate(WorkflowContext context) => context.Get<bool>("Z");
+
+    public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
+    }
 }

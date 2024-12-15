@@ -1,4 +1,6 @@
 ﻿
+using System.Text.Json;
+
 public class MonitorStep : StepBase
 {
     public MonitorStep(string id) : base(id)
@@ -32,11 +34,38 @@ public class MonitorStep : StepBase
 
         if (conditionMet)
         {
-            OnSuccessActions.ForEach(action => action.Execute(context));
+            OnSuccessActions.ForEach(action => action.Execute(context, new InitiatorMetaData
+            {
+                InitiatorId = Id,
+                InitiatorType = InitiatorType.Step,
+            }));
         }
         else
         {
-            OnTimeoutActions.ForEach(action => action.Execute(context));
+            OnTimeoutActions.ForEach(action => action.Execute(context, new InitiatorMetaData
+            {
+                InitiatorType = InitiatorType.Step,
+                InitiatorId = Id
+            }));
         }
+    }
+    public override string Serialize(WorkflowContext context)
+    {
+        var routesjson = Routes.Select(r => r.Serialize(context)).ToArray();
+        var routes = string.Join(",", routesjson);
+
+        var data = new
+        {
+            Id,
+            Routes = routes,
+            State,
+            OnSuccessActions,
+            OnTimeoutActions,
+            PollingInterval,
+            Timeout,
+            Condition
+        };
+
+        return JsonSerializer.Serialize(data);
     }
 }

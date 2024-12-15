@@ -1,4 +1,6 @@
-﻿public interface IWorkflowStep
+﻿using CharkhDande.Core;
+
+public interface IStep : ICustomSerializable
 {
     string Id { get; }
     void Execute(WorkflowContext context);

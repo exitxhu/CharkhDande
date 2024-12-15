@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿
 using System.Linq.Expressions;
 
 public class LambdaCondition : ICondition
@@ -30,6 +30,11 @@ public class LambdaCondition : ICondition
         }
         return eval;
     }
+
+    public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class ExpressionCondition : ICondition
@@ -60,5 +65,10 @@ public class ExpressionCondition : ICondition
             context.workflowHistoryWriter.Write("", StepHistoryType.CONDITION, eval, desc);
         }
         return eval;
+    }
+
+    public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
     }
 }

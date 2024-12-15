@@ -1,6 +1,8 @@
-﻿using System.Text.Json;
+﻿using CharkhDande.Core;
 
-public class Workflow
+using System.Text.Json;
+
+public class Workflow: ICustomSerializable
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILoopDetectionPolicy _loopDetectionPolicy;
@@ -12,7 +14,7 @@ public class Workflow
     }
 
     public WorkflowContext Context { get; set; } = new WorkflowContext();
-    public IWorkflowStep StartStep { get; set; }
+    public IStep StartStep { get; set; }
 
     public void Run()
     {
@@ -24,7 +26,7 @@ public class Workflow
     {
         return true;
     }
-    private IWorkflowStep GoThroughSteps(IWorkflowStep currentStep)
+    private IStep GoThroughSteps(IStep currentStep)
     {
         while (currentStep != null)
         {
@@ -54,6 +56,17 @@ public class Workflow
 
     public string ExportWorkFlow()
     {
-        return JsonSerializer.Serialize(this);
+        var wf = new
+        {
+            State = _state,
+            Context,
+            Flow = StartStep.Serialize(Context)
+        };
+        return JsonSerializer.Serialize(wf);
+    }
+
+    public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
     }
 }

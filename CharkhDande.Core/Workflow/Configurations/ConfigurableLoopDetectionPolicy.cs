@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿
 public class ConfigurableLoopDetectionPolicy : ILoopDetectionPolicy
 {
     private readonly Dictionary<string, int> _stepCounts = new();

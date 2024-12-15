@@ -1,7 +1,10 @@
 ﻿
-public interface IRoute
+using CharkhDande.Core;
+
+public interface IRoute : ICustomSerializable
 {
+    public string Id { get; }
     bool Execute(WorkflowContext context);
-    Func<WorkflowContext, IWorkflowStep> GetNext { get; }
+    Func<WorkflowContext, IStep> GetNext { get; }
 
 }

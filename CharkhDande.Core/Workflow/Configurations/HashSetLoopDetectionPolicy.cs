@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿
 public class HashSetLoopDetectionPolicy : ILoopDetectionPolicy
 {
     private readonly HashSet<string> _visitedSteps = new();

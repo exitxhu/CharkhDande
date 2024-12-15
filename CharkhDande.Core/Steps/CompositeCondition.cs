@@ -1,5 +1,8 @@
 ﻿
 
+using System.Text.Json;
+using System;
+
 public class CompositeCondition : ICondition
 {
     private readonly List<ICondition> _conditions;
@@ -27,5 +30,21 @@ public class CompositeCondition : ICondition
         return _conditions
             .Select(c => c.Evaluate(context))
             .Aggregate(_combiner);
+    }
+
+    public string Serialize(WorkflowContext context)
+    {
+        //var routesjson = Routes.Select(r => r.Serialize()).ToArray();
+        //var routes = string.Join(",", routesjson);
+
+        var data = new
+        {
+            //Id,
+            //Routes = routes,
+            //State,
+            //Action = _actions,
+            Condition = _conditions,
+        };
+        return JsonSerializer.Serialize(data);
     }
 }
