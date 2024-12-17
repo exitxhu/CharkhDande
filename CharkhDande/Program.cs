@@ -22,7 +22,13 @@ ActionRegistry.Register(emailActionKey, (ctx, init) =>
 
 ActionRegistry.Register("jobAction", (ctx, init) => Console.WriteLine("Job completed successfully."));
 ActionRegistry.Register("jobTimeOutAction", (ctx, init) => Console.WriteLine("Job completion timed out."));
-
+ConditionRegistry.Register("docIdEven", (ctx, init) =>
+{
+    var id = ctx.Get<int>("doc_id");
+    Repo? repo = ctx.ServiceProvider.GetRequiredService<Repo>();
+    var ent = repo.Get(id);
+    return ent.id % 2 == 1;
+});
 var lambdaAction = new LambdaAction(emailActionKey);
 
 
@@ -60,7 +66,7 @@ var conditionZ = new ConditionZ();
 var conditionM = new ConditionX();
 var conditionN = new ExpressionCondition(ctx => 1 == 1);
 
-var groupedCondition = conditionX.And(conditionY).Or(conditionZ.Or(conditionM.And(conditionN)));
+CompositeCondition? groupedCondition = conditionX.And(conditionY).Or(conditionZ.Or(conditionM.And(conditionN)));
 
 
 workflow.Context.Set("jobCompleted", false);
@@ -68,7 +74,7 @@ workflow.Context.Set("X", false);
 workflow.Context.Set("Y", true);
 workflow.Context.Set("Z", true);
 
-bool result = groupedCondition.Evaluate(workflow.Context);
+bool result = groupedCondition.Evaluate(workflow.Context, new(InitiatorType.WorkFlow, "0"));
 
 workflow.StartStep = monitorTask;
 // Link the Workflow
@@ -81,31 +87,31 @@ var task3 = new ConditionalStep("third")
 };
 var task2 = new ConditionalStep("second")
 {
-    Routes = [ new ConditionalRoute(){
+    Routes = [ new ConditionalRoute("GoTask3R"){
         GetNext = ctx => task3,
-        Id = "RT1"},
+        _conditions = [
+            new LambdaCondition("docIdEven")
+            ]
+    },
     ],
     _actions = [new LambdaAction("taskRun")]
 };
 
-task3.Routes = [new ConditionalRoute {
-    Id ="EndR",
+task3.Routes = [new ConditionalRoute("FinishR") {
     GetNext = ctx => null
 }];
 ActionRegistry.Register("jobTriggerKey", (ctx, init) =>
         ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("trigger a job"));
 ActionRegistry.Register("dispatchEventKey", (ctx, init) =>
         ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("dispatch an event"));
+
+
+
 var task1 = new ConditionalStep("first")
 {
     _conditions = new List<ICondition>
     {
-        new LambdaCondition(ctx =>{
-            var id = ctx.Get<int>("doc_id");
-            Repo? repo = ctx.ServiceProvider.GetRequiredService<Repo>();
-            var ent = repo.Get(id);
-           return ent.id %2 == 1;
-        }),
+        new LambdaCondition("docIdEven"),
         new ExpressionCondition(ctx => ctx.Get<int>("age") > 5)
     },
     _actions = new List<IAction>
@@ -115,15 +121,17 @@ var task1 = new ConditionalStep("first")
     new LambdaAction("dispatchEventKey")
     }
 ,
-    Routes = [new ConditionalRoute() { Id = "T2R", GetNext = ctx => task2 }]
+    Routes = [new ConditionalRoute("GoTask2R") { GetNext = ctx => task2 }]
 };
-monitorTask.Routes = [new ConditionalRoute { Id = "T1R", GetNext = ctx => task1 }];
+monitorTask.Routes = [new ConditionalRoute("GoTask1R") { GetNext = ctx => task1 }];
 // Run the Workflow
 workflow.Context.Set("age", 10);
 workflow.Context.Set("doc_id", 1);
 
+
 var tasks = new List<Task>()
 {
+
 Task.Run(workflow.Run),
 
 
@@ -168,9 +176,14 @@ public class Entity
 
 public class ConditionX : ICondition
 {
-    public bool Evaluate(WorkflowContext context) => context.Get<bool>("X");
+    public bool Evaluate(WorkflowContext context, InitiatorMetaData initiatorMetaData) => context.Get<bool>("X");
 
     public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ConditionSerializableObject SerializeObject(WorkflowContext context)
     {
         throw new NotImplementedException();
     }
@@ -178,9 +191,14 @@ public class ConditionX : ICondition
 
 public class ConditionY : ICondition
 {
-    public bool Evaluate(WorkflowContext context) => context.Get<bool>("Y");
+    public bool Evaluate(WorkflowContext context, InitiatorMetaData initiatorMetaData) => context.Get<bool>("Y");
 
     public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ConditionSerializableObject SerializeObject(WorkflowContext context)
     {
         throw new NotImplementedException();
     }
@@ -188,9 +206,14 @@ public class ConditionY : ICondition
 
 public class ConditionZ : ICondition
 {
-    public bool Evaluate(WorkflowContext context) => context.Get<bool>("Z");
+    public bool Evaluate(WorkflowContext context, InitiatorMetaData initiatorMetaData) => context.Get<bool>("Z");
 
     public string Serialize(WorkflowContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ConditionSerializableObject SerializeObject(WorkflowContext context)
     {
         throw new NotImplementedException();
     }

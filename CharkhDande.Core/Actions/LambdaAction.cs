@@ -14,14 +14,6 @@ public class LambdaAction : IAction
         _action = ActionRegistry.Resolve(actionKey);
     }
 
-    private LambdaAction(Action<WorkflowContext, InitiatorMetaData> action, string actionKey)
-    {
-        _action = action ?? throw new ArgumentNullException(nameof(action));
-        _actionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
-
-        ActionRegistry.Register(actionKey, action);
-    }
-
     public void Execute(WorkflowContext context, InitiatorMetaData initiator)
     {
         var eval = false;
@@ -45,32 +37,25 @@ public class LambdaAction : IAction
 
     public string Serialize(WorkflowContext context)
     {
-        return JsonSerializer.Serialize(new LambdaActionMetadata { ActionKey = _actionKey });
+        return JsonSerializer.Serialize(SerializeObject(context));
     }
 
     public static LambdaAction Deserialize(string serializedData)
     {
-        var metadata = JsonSerializer.Deserialize<LambdaActionMetadata>(serializedData);
+        var metadata = JsonSerializer.Deserialize<ActionSerializableObject>(serializedData);
 
         if (metadata == null)
             throw new InvalidOperationException("Invalid serialized data.");
 
-        return new LambdaAction(metadata.ActionKey);
+        return new LambdaAction(metadata.Key);
+    }
+
+    public ActionSerializableObject SerializeObject(WorkflowContext context)
+    {
+        return new ActionSerializableObject
+        {
+            Key = _actionKey
+        };
     }
 }
-
-public class LambdaActionMetadata
-{
-    public string ActionKey { get; set; }
-}
-public class InitiatorMetaData
-{
-    public InitiatorType InitiatorType { get; set; }
-    public string InitiatorId { get; set; }
-}
-public enum InitiatorType
-{
-    Step,
-    Route,
-    WorkFlow
-}
+public record InitiatorMetaData(InitiatorType InitiatorType, string InitiatorId);

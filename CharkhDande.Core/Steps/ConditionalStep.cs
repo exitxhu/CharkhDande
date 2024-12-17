@@ -5,11 +5,16 @@ public class ConditionalStep : StepBase
     public List<ICondition> _conditions = new();
     public List<IAction> _actions = new();
     public Func<WorkflowContext, IStep?> _nextTaskResolver;
+    private readonly InitiatorMetaData initiatorMetaData;
+    private const string STEP_TYPE = nameof(ConditionalStep);
+    public override string StepType => STEP_TYPE;
 
     public ConditionalStep(string id, Func<WorkflowContext, IStep?>? nextTaskResolver = null)
         : base(id)
     {
         _nextTaskResolver = nextTaskResolver!;
+        initiatorMetaData = new InitiatorMetaData(InitiatorType.Step, Id);
+
     }
 
     public void AddCondition(ICondition condition) => _conditions.Add(condition);
@@ -19,32 +24,41 @@ public class ConditionalStep : StepBase
     public override void Execute(WorkflowContext context)
     {
         State = StepState.RUNNING;
-        if (_conditions.All(c => c.Evaluate(context)))
+        if (_conditions.All(c => c.Evaluate(context, initiatorMetaData)))
         {
             foreach (var action in _actions)
             {
-                action.Execute(context, new InitiatorMetaData
-                {
-                    InitiatorType = InitiatorType.Step,
-                    InitiatorId = Id
-                });
+                action.Execute(context, initiatorMetaData);
                 State = StepState.FINISHED;
             }
         }
     }
     public override string Serialize(WorkflowContext context)
     {
-        var routesjson = Routes.Select(r => r.Serialize(context)).ToArray();
-        var routes = string.Join(",", routesjson);
+        return JsonSerializer.Serialize(SerializeObject(context));
+    }
 
-        var data = new
+    public override StepSerializeObject SerializeObject(WorkflowContext context)
+    {
+        var meta = new Dictionary<string, object>();
+
+        for (int i = 0; i < _conditions.Count; i++)
         {
-            Id,
-            Routes = routes,
-            State,
-            Action = _actions,
-            Condition = _conditions,
+            var condition = _conditions[i];
+            meta.Add("Consitions#" + (i + 1), condition.SerializeObject(context));
+        }
+        for (int i = 0; i < _actions.Count; i++)
+        {
+            var condition = _actions[i];
+            meta.Add("Actions#" + (i + 1), condition.SerializeObject(context));
+        }
+        return new StepSerializeObject
+        {
+            Id = Id,
+            Routes = GetRoutes().Select(a => a.SerializeObject(context)).ToArray(),
+            State = State,
+            Type = StepType,
+            MetaData = meta
         };
-        return JsonSerializer.Serialize(data);
     }
 }

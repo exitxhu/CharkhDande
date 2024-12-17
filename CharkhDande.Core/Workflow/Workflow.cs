@@ -2,12 +2,12 @@
 
 using System.Text.Json;
 
-public class Workflow: ICustomSerializable
+public class Workflow
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILoopDetectionPolicy _loopDetectionPolicy;
+    private readonly ILoopDetectionPolicy? _loopDetectionPolicy;
     private readonly Dictionary<string, StepState> _state = new();
-    public Workflow(IServiceProvider serviceProvider, ILoopDetectionPolicy loopDetectionPolicy)
+    public Workflow(IServiceProvider serviceProvider, ILoopDetectionPolicy? loopDetectionPolicy = null)
     {
         _serviceProvider = serviceProvider;
         _loopDetectionPolicy = loopDetectionPolicy;
@@ -16,9 +16,30 @@ public class Workflow: ICustomSerializable
     public WorkflowContext Context { get; set; } = new WorkflowContext();
     public IStep StartStep { get; set; }
 
+    public void Next()
+    {
+        _loopDetectionPolicy?.Clear(); // Ensure a clean slate for each run
+
+        var currentStep = StartStep;
+
+        currentStep.Execute(Context);
+
+        _state[currentStep.Id] = currentStep.State;
+
+        var routes = currentStep.GetRoutes();
+
+        foreach (var route in routes)
+        {
+            if (!route.Execute(Context))
+            {
+                Console.WriteLine("something failed");
+            }
+        }
+    }
+
     public void Run()
     {
-        _loopDetectionPolicy.Clear(); // Ensure a clean slate for each run
+        _loopDetectionPolicy?.Clear(); // Ensure a clean slate for each run
         var currentStep = StartStep;
         currentStep = GoThroughSteps(currentStep);
     }
@@ -26,11 +47,11 @@ public class Workflow: ICustomSerializable
     {
         return true;
     }
-    private IStep GoThroughSteps(IStep currentStep)
+    private IStep? GoThroughSteps(IStep currentStep)
     {
         while (currentStep != null)
         {
-            _loopDetectionPolicy.TrackStep(currentStep.Id);
+            _loopDetectionPolicy?.TrackStep(currentStep.Id);
 
             currentStep.Execute(Context);
             _state[currentStep.Id] = currentStep.State;
@@ -60,13 +81,11 @@ public class Workflow: ICustomSerializable
         {
             State = _state,
             Context,
-            Flow = StartStep.Serialize(Context)
+            Flow = StartStep.SerializeObject(Context)
         };
-        return JsonSerializer.Serialize(wf);
-    }
+        return JsonSerializer.Serialize(wf, new JsonSerializerOptions
+        {
 
-    public string Serialize(WorkflowContext context)
-    {
-        throw new NotImplementedException();
+        });
     }
 }

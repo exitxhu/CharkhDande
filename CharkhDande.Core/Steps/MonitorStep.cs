@@ -1,10 +1,17 @@
 ﻿
+using CharkhDande.Core;
+
 using System.Text.Json;
 
 public class MonitorStep : StepBase
 {
+    private const string STEP_TYPE = nameof(MonitorStep);
+    public override string StepType => STEP_TYPE;
+
+    private readonly InitiatorMetaData initiatorMetaData;
     public MonitorStep(string id) : base(id)
     {
+        initiatorMetaData = new InitiatorMetaData(InitiatorType.Step, Id);
     }
 
     public ICondition Condition { get; set; }
@@ -12,6 +19,7 @@ public class MonitorStep : StepBase
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
     public List<IAction> OnTimeoutActions { get; set; } = new();
     public List<IAction> OnSuccessActions { get; set; } = new();
+
 
     public override void Execute(WorkflowContext context)
     {
@@ -22,7 +30,7 @@ public class MonitorStep : StepBase
 
         while (DateTime.UtcNow - startTime < Timeout)
         {
-            if (Condition.Evaluate(context))
+            if (Condition.Evaluate(context, initiatorMetaData))
             {
                 conditionMet = true;
                 State = StepState.FINISHED;
@@ -34,38 +42,40 @@ public class MonitorStep : StepBase
 
         if (conditionMet)
         {
-            OnSuccessActions.ForEach(action => action.Execute(context, new InitiatorMetaData
-            {
-                InitiatorId = Id,
-                InitiatorType = InitiatorType.Step,
-            }));
+            OnSuccessActions.ForEach(action => action.Execute(context, new InitiatorMetaData(InitiatorType.Step, Id)));
         }
         else
         {
-            OnTimeoutActions.ForEach(action => action.Execute(context, new InitiatorMetaData
-            {
-                InitiatorType = InitiatorType.Step,
-                InitiatorId = Id
-            }));
+            OnTimeoutActions.ForEach(action => action.Execute(context, new InitiatorMetaData(InitiatorType.Step, Id)));
         }
     }
     public override string Serialize(WorkflowContext context)
     {
-        var routesjson = Routes.Select(r => r.Serialize(context)).ToArray();
-        var routes = string.Join(",", routesjson);
+        return JsonSerializer.Serialize(SerializeObject(context));
+    }
 
-        var data = new
+    public override StepSerializeObject SerializeObject(WorkflowContext context)
+    {
+        var meta = new Dictionary<string, object>();
+
+        for (int i = 0; i < OnSuccessActions.Count; i++)
         {
-            Id,
-            Routes = routes,
-            State,
-            OnSuccessActions,
-            OnTimeoutActions,
-            PollingInterval,
-            Timeout,
-            Condition
-        };
+            var action = OnSuccessActions[i];
+            meta.Add("OnSuccessActions#" + (i + 1), action.SerializeObject(context));
+        }
+        for (int i = 0; i < OnTimeoutActions.Count; i++)
+        {
+            var action = OnTimeoutActions[i];
+            meta.Add("OnTimeoutActions#" + (i + 1), action.SerializeObject(context));
+        }
 
-        return JsonSerializer.Serialize(data);
+        return new StepSerializeObject()
+        {
+            State = State,
+            Routes = GetRoutes().Select(a => a.SerializeObject(context)).ToArray(),
+            Id = Id,
+            Type = StepType,
+            MetaData = meta
+        };
     }
 }

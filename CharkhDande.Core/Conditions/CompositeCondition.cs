@@ -19,7 +19,7 @@ public class CompositeCondition : ICondition
         _conditions.Add(condition);
     }
 
-    public bool Evaluate(WorkflowContext context)
+    public bool Evaluate(WorkflowContext context, InitiatorMetaData initiatorMetaData)
     {
         if (!_conditions.Any())
         {
@@ -28,7 +28,7 @@ public class CompositeCondition : ICondition
 
         // Combine all conditions using the combiner function
         return _conditions
-            .Select(c => c.Evaluate(context))
+            .Select(c => c.Evaluate(context, initiatorMetaData))
             .Aggregate(_combiner);
     }
 
@@ -45,6 +45,11 @@ public class CompositeCondition : ICondition
             //Action = _actions,
             Condition = _conditions,
         };
-        return JsonSerializer.Serialize(data);
+        return JsonSerializer.Serialize(SerializeObject(context));
+    }
+
+    public ConditionSerializableObject SerializeObject(WorkflowContext context)
+    {
+        throw new NotImplementedException();
     }
 }

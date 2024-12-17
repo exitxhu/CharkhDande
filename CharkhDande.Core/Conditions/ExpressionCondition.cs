@@ -1,13 +1,15 @@
-﻿using System.Text.Json;
+﻿
+using System.Linq.Expressions;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
-public class LambdaCondition : ICondition
+public class ExpressionCondition : ICondition
 {
-    private readonly Func<WorkflowContext, InitiatorMetaData, bool> _predicate;
-    private readonly string _conditionKey;
-    public LambdaCondition(string actionKey)
+    private readonly Expression<Func<WorkflowContext, bool>> _predicate;
+    private readonly string _predicateHumanized;
+    public ExpressionCondition(Expression<Func<WorkflowContext, bool>> predicate)
     {
-        _conditionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
-        _predicate = ConditionRegistry.Resolve(actionKey);
+        _predicate = predicate;
     }
     //TODO: inject failure logic
     public bool Evaluate(WorkflowContext context, InitiatorMetaData initiatorMetaData)
@@ -16,12 +18,12 @@ public class LambdaCondition : ICondition
         var desc = string.Empty;
         try
         {
-            eval = _predicate(context, initiatorMetaData);
-            desc = $"{_predicate} successfully evaluated";
+            eval = _predicate.Compile().Invoke(context);
+            desc = $"{_predicate.Body} successfully evaluated";
         }
         catch (Exception ex)
         {
-            desc = $"{_predicate} failed to evaluate, msg: {ex.Message}";
+            desc = $"{_predicate.Body} failed to evaluate, msg: {ex.Message}";
             throw;
         }
         finally
@@ -38,9 +40,9 @@ public class LambdaCondition : ICondition
 
     public ConditionSerializableObject SerializeObject(WorkflowContext context)
     {
-        return new ConditionSerializableObject
+        return new ConditionSerializableObject()
         {
-            Key = _conditionKey
+            Key = _predicate.Body.ToString()
         };
     }
 }

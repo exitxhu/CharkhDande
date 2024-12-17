@@ -4,25 +4,30 @@ public class ConditionalRoute : IRoute
 {
     public List<ICondition> _conditions = new();
     public List<IAction> _actions = new();
+    private readonly InitiatorMetaData initiatorMetaData;
 
     public Func<WorkflowContext, IStep> GetNext { get; set; } = ctx => throw new NotImplementedException("Routes must have a valid destination");
 
-    public required string Id {  get; set; }
+    public string Id { get; private set; }
+
+
+    public ConditionalRoute(string id)
+    {
+        Id = id;
+        initiatorMetaData = new InitiatorMetaData(InitiatorType.Step, Id);
+
+    }
 
     public void AddCondition(ICondition condition) => _conditions.Add(condition);
     public void AddAction(IAction action) => _actions.Add(action);
 
     public bool Execute(WorkflowContext context)
     {
-        if (_conditions.All(c => c.Evaluate(context)))
+        if (Evaluate(context))
         {
             foreach (var action in _actions)
             {
-                action.Execute(context, new InitiatorMetaData
-                {
-                    InitiatorId = Id,
-                    InitiatorType = InitiatorType.Route
-                });
+                action.Execute(context, initiatorMetaData);
             }
             return true;
         }
@@ -31,14 +36,22 @@ public class ConditionalRoute : IRoute
 
     public string Serialize(WorkflowContext context)
     {
+        return JsonSerializer.Serialize(SerializeObject(context));
+    }
 
-        var data = new
+    public RouteSerializableObject SerializeObject(WorkflowContext context)
+    {
+        return new()
         {
-            Id,
-            Action = _actions,
-            Condition = _conditions,
-            Next = GetNext(context).ToString(),
+            Id = Id,
+            Action = _actions.Select(a => a.SerializeObject(context)),
+            Condition = _conditions.Select(a => a.SerializeObject(context)),
+            Next = GetNext(context)?.SerializeObject(context),
         };
-        return JsonSerializer.Serialize(data);
+    }
+
+    public bool Evaluate(WorkflowContext context)
+    {
+        return _conditions.All(c => c.Evaluate(context, initiatorMetaData));
     }
 }

@@ -7,6 +7,8 @@ public abstract class StepBase : IStep
     public IEnumerable<IRoute> Routes { get; set; }
     public StepState State { get; set; }
 
+    public abstract string StepType { get; }
+
     protected StepBase(string id)
     {
         Id = id;
@@ -16,18 +18,20 @@ public abstract class StepBase : IStep
 
     public IEnumerable<IRoute> GetRoutes() => Routes;
 
-    public virtual string Serialize(WorkflowContext context)
-    {
-        var routesjson = Routes.Select(r => r.Serialize(context)).ToArray();
-        var routes = string.Join(",", routesjson);
+    public abstract string Serialize(WorkflowContext context);
+    //{
+    //    return JsonSerializer.Serialize(SerializeObject(context));
+    //}
 
-        var data = new
-        {
-            Id,
-            Routes = routes,
-            State,
-        };
+    public abstract StepSerializeObject SerializeObject(WorkflowContext context);
+    //{
+    //    var obj = new StepSerializeObject
+    //    {
+    //        Id = Id,
+    //        State = State,
+    //        Routes = Routes.Select((r) => r.SerializeObject(context)),
+    //    };
 
-        return JsonSerializer.Serialize(data);
-    }
+    //    return obj;
+    //}
 }
