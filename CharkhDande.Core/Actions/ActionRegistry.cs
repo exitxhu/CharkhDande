@@ -1,8 +1,8 @@
-﻿public static class ActionRegistry
+﻿public class ActionRegistry
 {
-    private static readonly Dictionary<string, Action<WorkflowContext,InitiatorMetaData>> _actions = new();
+    private readonly Dictionary<string, Action<WorkflowContext,InitiatorMetaData>> _actions = new();
 
-    public static void Register(string key, Action<WorkflowContext, InitiatorMetaData> action)
+    public void Register(string key, Action<WorkflowContext, InitiatorMetaData> action)
     {
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Key cannot be null or whitespace.");
         if (action == null) throw new ArgumentNullException(nameof(action));
@@ -11,7 +11,7 @@
         _actions[key] = action;
     }
 
-    public static Action<WorkflowContext, InitiatorMetaData> Resolve(string key)
+    public Action<WorkflowContext, InitiatorMetaData> Resolve(string key)
     {
         if (!_actions.TryGetValue(key, out var action))
             throw new KeyNotFoundException($"No action found for key '{key}'.");

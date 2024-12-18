@@ -1,21 +1,25 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+
+using System;
 
 using System;
 using System.Text.Json;
 
 public class LambdaAction : IAction
 {
-    private readonly Action<WorkflowContext, InitiatorMetaData> _action;
+    private Action<WorkflowContext, InitiatorMetaData> _action;
     private readonly string _actionKey;
 
     public LambdaAction(string actionKey)
     {
         _actionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
-        _action = ActionRegistry.Resolve(actionKey);
     }
 
     public void Execute(WorkflowContext context, InitiatorMetaData initiator)
     {
+        var actionRegistry = context.ServiceProvider.GetRequiredService<ActionRegistry>();
+        _action = actionRegistry.Resolve(_actionKey);
+
         var eval = false;
         var desc = string.Empty;
         try

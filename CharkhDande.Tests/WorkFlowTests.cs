@@ -7,25 +7,33 @@ namespace CharkhDande.Tests;
 public class WorkFlowTests
 {
     [Fact]
-    public void SimpleCreation()
+    public async Task SimpleCreation()
     {
         var services = new ServiceCollection();
 
+
+
+
+
         services.AddTransient<IMessageService, ConsoleMessageService>();
         services.AddTransient<Repo>();
-
+        services.AddSingleton<ActionRegistry>();
+        services.AddSingleton<ConditionRegistry>();
         var serviceProvider = services.BuildServiceProvider();
 
         var myWorkFlow = new Workflow(serviceProvider);
-        
+
         myWorkFlow.Should().NotBeNull();
         myWorkFlow.Context.Should().NotBeNull();
 
-        Configurator.RegisterActions();
-        Configurator.RegisterConditions();
+        var actionReg = serviceProvider.GetRequiredService<ActionRegistry>();
+        var conditionReg = serviceProvider.GetRequiredService<ConditionRegistry>();
+
+        Configurator.RegisterActions(actionReg);
+        Configurator.RegisterConditions(conditionReg);
 
         var emailActionKey = "sendEmailOnCondition";
-       
+
         var lambdaAction = new LambdaAction(emailActionKey);
 
 
@@ -86,7 +94,7 @@ public class WorkFlowTests
             Routes = [ new ConditionalRoute("GoTask3R"){
         GetNext = ctx => task3,
         _conditions = [
-            new LambdaCondition("docIdEven")
+            new LambdaCondition(Configurator.ConditionDocIdOdd)
             ]
     },
     ],
@@ -96,14 +104,14 @@ public class WorkFlowTests
         task3.Routes = [new ConditionalRoute("FinishR") {
     GetNext = ctx => null
 }];
-       
+
 
 
         var task1 = new ConditionalStep("first")
         {
             _conditions = new List<ICondition>
     {
-        new LambdaCondition("docIdEven"),
+        new LambdaCondition(Configurator.ConditionDocIdOdd),
         new ExpressionCondition(ctx => ctx.Get<int>("age") > 5)
     },
             _actions = new List<IAction>
@@ -122,18 +130,18 @@ public class WorkFlowTests
 
 
         var tasks = new List<Task>()
-{
+            {
 
-Task.Run(workflow.Run),
+            Task.Run(workflow.Run),
 
 
-Task.Run(async () =>
-{
-    await Task.Delay(1500);
-    workflow.Context.Set("jobCompleted", true);
-})
-};
-        Task.WhenAll(tasks).Wait();
+            Task.Run(async () =>
+            {
+                await Task.Delay(1500);
+                workflow.Context.Set("jobCompleted", true);
+            })
+            };
+        await Task.WhenAll(tasks);
 
 
         var histores = workflow.GetHistory();

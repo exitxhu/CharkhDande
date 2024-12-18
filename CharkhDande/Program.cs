@@ -8,11 +8,15 @@ var services = new ServiceCollection();
 services.AddTransient<IMessageService, ConsoleMessageService>();
 services.AddTransient<Repo>();
 
+services.AddSingleton<ActionRegistry>();
+services.AddSingleton<ConditionRegistry>();
 // Build the service provider
 var serviceProvider = services.BuildServiceProvider();
+var actionRegistry = serviceProvider.GetRequiredService<ActionRegistry>();
+var conditionRegistry = serviceProvider.GetRequiredService<ConditionRegistry>();
 
 var emailActionKey = "sendEmailOnCondition";
-ActionRegistry.Register(emailActionKey, (ctx, init) =>
+actionRegistry.Register(emailActionKey, (ctx, init) =>
 {
     Console.WriteLine("sendEmail");
     var T = Random.Shared.Next(0, 100) % 3 == 2;
@@ -20,9 +24,9 @@ ActionRegistry.Register(emailActionKey, (ctx, init) =>
         ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("email someone");
 });
 
-ActionRegistry.Register("jobAction", (ctx, init) => Console.WriteLine("Job completed successfully."));
-ActionRegistry.Register("jobTimeOutAction", (ctx, init) => Console.WriteLine("Job completion timed out."));
-ConditionRegistry.Register("docIdEven", (ctx, init) =>
+actionRegistry.Register("jobAction", (ctx, init) => Console.WriteLine("Job completed successfully."));
+actionRegistry.Register("jobTimeOutAction", (ctx, init) => Console.WriteLine("Job completion timed out."));
+conditionRegistry.Register("docIdEven", (ctx, init) =>
 {
     var id = ctx.Get<int>("doc_id");
     Repo? repo = ctx.ServiceProvider.GetRequiredService<Repo>();
@@ -79,7 +83,7 @@ bool result = groupedCondition.Evaluate(workflow.Context, new(InitiatorType.Work
 workflow.StartStep = monitorTask;
 // Link the Workflow
 
-ActionRegistry.Register("taskRun", (ctx, init) => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage($"task {init.InitiatorId} runs"));
+actionRegistry.Register("taskRun", (ctx, init) => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage($"task {init.InitiatorId} runs"));
 
 var task3 = new ConditionalStep("third")
 {
@@ -100,9 +104,9 @@ var task2 = new ConditionalStep("second")
 task3.Routes = [new ConditionalRoute("FinishR") {
     GetNext = ctx => null
 }];
-ActionRegistry.Register("jobTriggerKey", (ctx, init) =>
+actionRegistry.Register("jobTriggerKey", (ctx, init) =>
         ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("trigger a job"));
-ActionRegistry.Register("dispatchEventKey", (ctx, init) =>
+actionRegistry.Register("dispatchEventKey", (ctx, init) =>
         ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("dispatch an event"));
 
 

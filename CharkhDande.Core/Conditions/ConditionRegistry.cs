@@ -1,8 +1,8 @@
-﻿public static class ConditionRegistry
+﻿public class ConditionRegistry
 {
-    private static readonly Dictionary<string, Func<WorkflowContext, InitiatorMetaData, bool>> _conditions = new();
+    private readonly Dictionary<string, Func<WorkflowContext, InitiatorMetaData, bool>> _conditions = new();
 
-    public static void Register(string key, Func<WorkflowContext, InitiatorMetaData, bool> action)
+    public void Register(string key, Func<WorkflowContext, InitiatorMetaData, bool> action)
     {
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Key cannot be null or whitespace.");
         if (action == null) throw new ArgumentNullException(nameof(action));
@@ -11,7 +11,7 @@
         _conditions[key] = action;
     }
 
-    public static Func<WorkflowContext, InitiatorMetaData, bool> Resolve(string key)
+    public Func<WorkflowContext, InitiatorMetaData, bool> Resolve(string key)
     {
         if (!_conditions.TryGetValue(key, out var condition))
             throw new KeyNotFoundException($"No action found for key '{key}'.");
