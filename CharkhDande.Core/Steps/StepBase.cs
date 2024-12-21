@@ -1,6 +1,9 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using static IStep;
+using static Workflow;
+
 public abstract class StepBase : IStep
 {
     public string Id { get; init; }
@@ -14,9 +17,9 @@ public abstract class StepBase : IStep
         Id = id;
     }
 
-    public abstract void Execute(WorkflowContext context);
+    public abstract WorkflowExecutionResult Execute(WorkflowContext context);
 
-    public IEnumerable<IRoute> GetRoutes() => Routes;
+    public IEnumerable<IRoute> GetRoutes() => Routes ?? Enumerable.Empty<IRoute>();
 
     public abstract string Serialize(WorkflowContext context);
     //{

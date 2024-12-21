@@ -12,6 +12,7 @@ public static class Configurator
     public const string ActionDispatchEvent = "dispatchEventKey";
     public const string ConditionDocIdOdd = "docIdOdd";
     public const string ConditionTrue = "true";
+    public const string ConditionFalse = "false";
 
     public static void RegisterConditions(ConditionRegistry conditionRegistry)
     {

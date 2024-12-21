@@ -3,6 +3,8 @@ using CharkhDande.Core;
 
 using System.Text.Json;
 
+using static IStep;
+
 public class MonitorStep : StepBase
 {
     private const string STEP_TYPE = nameof(MonitorStep);
@@ -21,7 +23,7 @@ public class MonitorStep : StepBase
     public List<IAction> OnSuccessActions { get; set; } = new();
 
 
-    public override void Execute(WorkflowContext context)
+    public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
         var startTime = DateTime.UtcNow;
         State = StepState.RUNNING;
@@ -48,6 +50,10 @@ public class MonitorStep : StepBase
         {
             OnTimeoutActions.ForEach(action => action.Execute(context, new InitiatorMetaData(InitiatorType.Step, Id)));
         }
+        return new WorkflowExecutionResult
+        {
+
+        };
     }
     public override string Serialize(WorkflowContext context)
     {
@@ -72,7 +78,7 @@ public class MonitorStep : StepBase
         return new StepSerializeObject()
         {
             State = State,
-            Routes = GetRoutes().Select(a => a.SerializeObject(context)).ToArray(),
+            Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             Id = Id,
             Type = StepType,
             MetaData = meta

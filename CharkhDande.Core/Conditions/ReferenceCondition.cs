@@ -2,11 +2,11 @@
 
 using System.Text.Json;
 
-public class LambdaCondition : ICondition
+public class ReferenceCondition : ICondition
 {
     private Func<WorkflowContext, InitiatorMetaData, bool> _predicate = default!;
     private readonly string _conditionKey;
-    public LambdaCondition(string actionKey)
+    public ReferenceCondition(string actionKey)
     {
         _conditionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
     }

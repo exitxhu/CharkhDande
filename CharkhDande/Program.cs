@@ -1,4 +1,6 @@
 ﻿
+using CharkhDande.Kesho;
+
 using Microsoft.Extensions.DependencyInjection;
 
 Console.WriteLine("Hello, World!");
@@ -7,9 +9,23 @@ var services = new ServiceCollection();
 // Register services
 services.AddTransient<IMessageService, ConsoleMessageService>();
 services.AddTransient<Repo>();
+services.AddSingleton<WFRepo>();
 
 services.AddSingleton<ActionRegistry>();
 services.AddSingleton<ConditionRegistry>();
+services.AddSingleton<WorkflowFactory>(a =>
+{
+    var wf = new WorkflowFactory(a);
+    wf.WorkflowResolver = async id =>
+    {
+        var t = a.GetRequiredService<WFRepo>();
+        return t.Store.FirstOrDefault(f => f.Key == id).Value;
+    };
+    return wf;
+});
+
+services.AddKesho();
+
 // Build the service provider
 var serviceProvider = services.BuildServiceProvider();
 var actionRegistry = serviceProvider.GetRequiredService<ActionRegistry>();
@@ -35,8 +51,11 @@ conditionRegistry.Register("docIdEven", (ctx, init) =>
 });
 var lambdaAction = new LambdaAction(emailActionKey);
 
+var eventStep = new EventListenerStep("eventStep", "accept_topic");
 
-var monitorTask = new MonitorStep("monitor 1")
+eventStep.Actions.Add(new LambdaAction("jobAction"));
+
+var monitorStep = new MonitorStep("monitor 1")
 {
     Condition = new ExpressionCondition(ctx => ctx.Get<bool>("jobCompleted")),
     PollingInterval = TimeSpan.FromSeconds(1),
@@ -52,17 +71,6 @@ var monitorTask = new MonitorStep("monitor 1")
 };
 
 
-// Resolve the main application class and run it
-var workflow = new Workflow(serviceProvider, new ConfigurableLoopDetectionPolicy()
-{
-
-})
-{
-    Context = new WorkflowContext
-    {
-        ServiceProvider = serviceProvider
-    }
-};
 
 var conditionX = new ConditionX();
 var conditionY = new ConditionY();
@@ -72,6 +80,12 @@ var conditionN = new ExpressionCondition(ctx => 1 == 1);
 
 CompositeCondition? groupedCondition = conditionX.And(conditionY).Or(conditionZ.Or(conditionM.And(conditionN)));
 
+var factory = serviceProvider.GetRequiredService<WorkflowFactory>();
+var wfRepo = serviceProvider.GetRequiredService<WFRepo>();
+
+var workflow = factory.GetGuidInstance();
+
+wfRepo.Store.Add(workflow.Id, workflow);
 
 workflow.Context.Set("jobCompleted", false);
 workflow.Context.Set("X", false);
@@ -80,30 +94,27 @@ workflow.Context.Set("Z", true);
 
 bool result = groupedCondition.Evaluate(workflow.Context, new(InitiatorType.WorkFlow, "0"));
 
-workflow.StartStep = monitorTask;
+workflow.StartStep = monitorStep;
 // Link the Workflow
 
 actionRegistry.Register("taskRun", (ctx, init) => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage($"task {init.InitiatorId} runs"));
 
-var task3 = new ConditionalStep("third")
+var step3 = new ConditionalStep("third")
 {
     _actions = [new LambdaAction("taskRun")]
 };
-var task2 = new ConditionalStep("second")
+var step2 = new ConditionalStep("second")
 {
     Routes = [ new ConditionalRoute("GoTask3R"){
-        GetNext = ctx => task3,
+        NextStep = new NextStepMetadate( step3.Id),
         _conditions = [
-            new LambdaCondition("docIdEven")
+            new ReferenceCondition("docIdEven")
             ]
     },
     ],
     _actions = [new LambdaAction("taskRun")]
 };
 
-task3.Routes = [new ConditionalRoute("FinishR") {
-    GetNext = ctx => null
-}];
 actionRegistry.Register("jobTriggerKey", (ctx, init) =>
         ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("trigger a job"));
 actionRegistry.Register("dispatchEventKey", (ctx, init) =>
@@ -111,12 +122,11 @@ actionRegistry.Register("dispatchEventKey", (ctx, init) =>
 
 
 
-var task1 = new ConditionalStep("first")
+var step1 = new ConditionalStep("first")
 {
     _conditions = new List<ICondition>
     {
-        new LambdaCondition("docIdEven"),
-        new ExpressionCondition(ctx => ctx.Get<int>("age") > 5)
+        new ReferenceCondition("docIdEven"),
     },
     _actions = new List<IAction>
     {
@@ -125,13 +135,16 @@ var task1 = new ConditionalStep("first")
     new LambdaAction("dispatchEventKey")
     }
 ,
-    Routes = [new ConditionalRoute("GoTask2R") { GetNext = ctx => task2 }]
+    Routes = [new ConditionalRoute("GoTask2R") { NextStep = new NextStepMetadate(step2.Id) }]
 };
-monitorTask.Routes = [new ConditionalRoute("GoTask1R") { GetNext = ctx => task1 }];
+monitorStep.Routes = [new ConditionalRoute("GoTask1R") { NextStep = new NextStepMetadate(eventStep.Id) }];
 // Run the Workflow
 workflow.Context.Set("age", 10);
 workflow.Context.Set("doc_id", 1);
 
+var evn = serviceProvider.GetRequiredService<KafkaEventSource>();
+
+workflow.AddSteps(step1, step2, step3, monitorStep, eventStep);
 
 var tasks = new List<Task>()
 {
@@ -141,8 +154,13 @@ Task.Run(workflow.Run),
 
 Task.Run(async () =>
 {
-    await Task.Delay(1500);
+    await Task.Delay(200);
     workflow.Context.Set("jobCompleted", true);
+}),
+Task.Run(async () =>
+{
+    await Task.Delay(2000);
+    evn.PushEvent("accept_topic", "something");
 })
 };
 Task.WhenAll(tasks).Wait();
@@ -221,4 +239,9 @@ public class ConditionZ : ICondition
     {
         throw new NotImplementedException();
     }
+}
+
+public class WFRepo
+{
+    public Dictionary<string, Workflow> Store { get; set; } = new();
 }

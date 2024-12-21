@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 
+using static IStep;
+
 public class ConditionalStep : StepBase
 {
     public List<ICondition> _conditions = new();
@@ -21,7 +23,8 @@ public class ConditionalStep : StepBase
 
     public void AddAction(IAction action) => _actions.Add(action);
 
-    public override void Execute(WorkflowContext context)
+
+    public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
         State = StepState.RUNNING;
         if (_conditions.All(c => c.Evaluate(context, initiatorMetaData)))
@@ -32,6 +35,10 @@ public class ConditionalStep : StepBase
                 State = StepState.FINISHED;
             }
         }
+        return new WorkflowExecutionResult
+        {
+
+        };
     }
     public override string Serialize(WorkflowContext context)
     {
@@ -55,7 +62,7 @@ public class ConditionalStep : StepBase
         return new StepSerializeObject
         {
             Id = Id,
-            Routes = GetRoutes().Select(a => a.SerializeObject(context)).ToArray(),
+            Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             State = State,
             Type = StepType,
             MetaData = meta

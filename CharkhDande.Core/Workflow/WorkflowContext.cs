@@ -1,48 +1,43 @@
-﻿public class WorkflowContext
+﻿using CharkhDande.Core;
+
+using System.Text.Json;
+
+public class WorkflowContext
 {
     private readonly Dictionary<string, object> _properties = new();
     internal readonly WorkflowHistoryWriter workflowHistoryWriter = new();
+    public IServiceProvider ServiceProvider { get; init; }
 
     public T Get<T>(string key) => (T)_properties[key];
-    public void Set<T>(string key, T value) => _properties[key] = value;
-
-    public IServiceProvider ServiceProvider { get; init; }
-}
-internal class WorkflowHistoryWriter
-{
-    public void Write(string id, StepHistoryType type, bool success, string description)
+    public bool TryGet<T>(string key, out T value)
     {
-        Histories.Add(new()
+        var res = _properties.TryGetValue(key, out var val);
+        if (val is T converted) value = converted;
+        else value = default!;
+        return res;
+    }
+    public void Set<T>(string key, T value)
+    {
+        _properties[key] = value;
+    }
+
+    public ContextSerializableObject SerializeObject()
+    {
+        return new ContextSerializableObject()
         {
-            Description = description,
-            IsSuccess = success,
-            StepId = id,
-            TimeStamp = DateTime.Now,
-            Type = type
-        });
+            Properties = _properties,
+        };
     }
-    List<StepHistoryEntry> Histories = new();
-    public List<StepHistoryEntry> GetHistoryEntries() => Histories;
-}
-public class StepHistoryEntry
-{
-    public string StepId { get; set; }
-    public DateTime TimeStamp { get; set; }
-    public StepHistoryType Type { get; set; }
-    public bool IsSuccess { get; set; }
-    public string Description { get; set; }
 
-    public override string ToString()
+    public string Serialize()
     {
-        return $"{TimeStamp}: {StepId}, {Type}, {IsSuccess}, {Description}";
+        return JsonSerializer.Serialize(SerializeObject());
     }
+
 }
 
-public enum StepHistoryType
+public record ContextSerializableObject
 {
-    CONDITION,
-    ACTION,
-    ROUTE,
-    EXECUTE_STARTED,
-    EXECUTE_FINISHED
+    public Dictionary<string, object> Properties { get; set; }
+    public List<StepHistoryEntry> History { get; set; }
 }

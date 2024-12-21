@@ -11,20 +11,13 @@ public class WorkFlowTests
     {
         var services = new ServiceCollection();
 
-
-
-
-
         services.AddTransient<IMessageService, ConsoleMessageService>();
         services.AddTransient<Repo>();
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton<ConditionRegistry>();
+        services.AddTransient<WorkflowFactory>();
+
         var serviceProvider = services.BuildServiceProvider();
-
-        var myWorkFlow = new Workflow(serviceProvider);
-
-        myWorkFlow.Should().NotBeNull();
-        myWorkFlow.Context.Should().NotBeNull();
 
         var actionReg = serviceProvider.GetRequiredService<ActionRegistry>();
         var conditionReg = serviceProvider.GetRequiredService<ConditionRegistry>();
@@ -32,10 +25,83 @@ public class WorkFlowTests
         Configurator.RegisterActions(actionReg);
         Configurator.RegisterConditions(conditionReg);
 
-        var emailActionKey = "sendEmailOnCondition";
+        var WFfactory = serviceProvider.GetRequiredService<WorkflowFactory>();
 
-        var lambdaAction = new LambdaAction(emailActionKey);
+        var myWorkFlow = WFfactory.GetGuidInstance();
 
+        myWorkFlow.Should().NotBeNull();
+        myWorkFlow.Context.Should().NotBeNull();
+
+    }
+    [Fact]
+    public async Task HappySimpleWorkflow()
+    {
+        var services = new ServiceCollection();
+
+        services.AddTransient<IMessageService, ConsoleMessageService>();
+        services.AddTransient<Repo>();
+        services.AddSingleton<ActionRegistry>();
+        services.AddSingleton<ConditionRegistry>();
+        services.AddTransient<WorkflowFactory>();
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        var actionReg = serviceProvider.GetRequiredService<ActionRegistry>();
+        var conditionReg = serviceProvider.GetRequiredService<ConditionRegistry>();
+
+        Configurator.RegisterActions(actionReg);
+        Configurator.RegisterConditions(conditionReg);
+
+        var WFfactory = serviceProvider.GetRequiredService<WorkflowFactory>();
+
+
+        var myWorkFlow = WFfactory.GetGuidInstance();
+
+        myWorkFlow.Should().NotBeNull();
+        myWorkFlow.Context.Should().NotBeNull();
+
+
+        var step1 = new ConditionalStep("step1");
+
+        var step2 = new ConditionalStep("step2");
+
+        var decision = new DecisionlStep("decision", DecisionOutputType.FORCED_XOR);
+
+        decision.Routes = [
+            new ConditionalRoute("r1"){
+                NextStep= new NextStepMetadate(step1.Id),
+                _conditions = {new ReferenceCondition(Configurator.ConditionTrue) },
+                _actions = { new LambdaAction(Configurator.ActionSendEmail) }
+            },
+            new ConditionalRoute("r2"){
+                NextStep = new NextStepMetadate(step2.Id),
+                _conditions = {new ReferenceCondition(Configurator.ConditionFalse) },
+                _actions = { new LambdaAction(Configurator.ActionSendEmail) }
+            }];
+
+    }
+    [Fact]
+    public async Task ComplextFlow()
+    {
+        var services = new ServiceCollection();
+
+        services.AddTransient<IMessageService, ConsoleMessageService>();
+        services.AddTransient<Repo>();
+        services.AddSingleton<ActionRegistry>();
+        services.AddSingleton<ConditionRegistry>();
+        services.AddTransient<WorkflowFactory>();
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        var actionReg = serviceProvider.GetRequiredService<ActionRegistry>();
+        var conditionReg = serviceProvider.GetRequiredService<ConditionRegistry>();
+
+        Configurator.RegisterActions(actionReg);
+        Configurator.RegisterConditions(conditionReg);
+
+        var WFfactory = serviceProvider.GetRequiredService<WorkflowFactory>();
+
+        var lambdaAction = new LambdaAction(Configurator.ActionSendEmail);
 
         var monitorTask = new MonitorStep("monitor 1")
         {
@@ -43,27 +109,18 @@ public class WorkFlowTests
             PollingInterval = TimeSpan.FromSeconds(1),
             Timeout = TimeSpan.FromSeconds(10),
             OnSuccessActions = new List<IAction>
-    {
-        new LambdaAction("jobAction"),
-    },
+            {
+                new LambdaAction("jobAction"),
+            },
             OnTimeoutActions = new List<IAction>
-    {
-        new LambdaAction("jobTimeOutAction"),
-    },
+            {
+                new LambdaAction("jobTimeOutAction"),
+            },
         };
 
 
         // Resolve the main application class and run it
-        var workflow = new Workflow(serviceProvider, new ConfigurableLoopDetectionPolicy()
-        {
-
-        })
-        {
-            Context = new WorkflowContext
-            {
-                ServiceProvider = serviceProvider
-            }
-        };
+        var workflow = WFfactory.GetGuidInstance();
 
         var conditionX = new ConditionX();
         var conditionY = new ConditionY();
@@ -92,38 +149,33 @@ public class WorkFlowTests
         var task2 = new ConditionalStep("second")
         {
             Routes = [ new ConditionalRoute("GoTask3R"){
-        GetNext = ctx => task3,
+        NextStep = new NextStepMetadate(task3.Id),
         _conditions = [
-            new LambdaCondition(Configurator.ConditionDocIdOdd)
+            new ReferenceCondition(Configurator.ConditionDocIdOdd)
             ]
     },
     ],
             _actions = [new LambdaAction("taskRun")]
         };
 
-        task3.Routes = [new ConditionalRoute("FinishR") {
-    GetNext = ctx => null
-}];
-
 
 
         var task1 = new ConditionalStep("first")
         {
             _conditions = new List<ICondition>
-    {
-        new LambdaCondition(Configurator.ConditionDocIdOdd),
-        new ExpressionCondition(ctx => ctx.Get<int>("age") > 5)
-    },
+        {
+            new ReferenceCondition(Configurator.ConditionDocIdOdd),
+            new ExpressionCondition(ctx => ctx.Get<int>("age") > 5)
+        },
             _actions = new List<IAction>
-    {
-        new LambdaAction(emailActionKey) ,
-    new LambdaAction("jobTriggerKey"),
-    new LambdaAction("dispatchEventKey")
-    }
-        ,
-            Routes = [new ConditionalRoute("GoTask2R") { GetNext = ctx => task2 }]
+        {
+            new LambdaAction(Configurator.ActionSendEmail),
+            new LambdaAction("jobTriggerKey"),
+            new LambdaAction("dispatchEventKey")
+        },
+            Routes = [new ConditionalRoute("GoTask2R") { NextStep = new NextStepMetadate(task2.Id) }]
         };
-        monitorTask.Routes = [new ConditionalRoute("GoTask1R") { GetNext = ctx => task1 }];
+        monitorTask.Routes = [new ConditionalRoute("GoTask1R") { NextStep = new NextStepMetadate(task1.Id) }];
         // Run the Workflow
         workflow.Context.Set("age", 10);
         workflow.Context.Set("doc_id", 1);
@@ -149,12 +201,6 @@ public class WorkFlowTests
         var js = workflow.ExportWorkFlow();
 
         var t = 0;
-
-    }
-
-    [Fact]
-    public void ConditionStep()
-    {
 
     }
 }

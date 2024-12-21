@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 
+using static IStep;
+
 public class DecisionlStep : StepBase
 {
     private readonly InitiatorMetaData initiatorMetaData;
@@ -16,14 +18,22 @@ public class DecisionlStep : StepBase
     }
 
 
-    public override void Execute(WorkflowContext context)
+    public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
         State = StepState.RUNNING;
         var route = BaseEvaluation.GetNextRoute(context, GetRoutes());
         if (route is null)
-            return;
+            return new WorkflowExecutionResult
+            {
+
+            };
         route.Execute(context);
         State = StepState.FINISHED;
+        
+        return new WorkflowExecutionResult
+        {
+
+        };
     }
     public override string Serialize(WorkflowContext context)
     {
@@ -35,7 +45,7 @@ public class DecisionlStep : StepBase
         return new StepSerializeObject
         {
             Id = Id,
-            Routes = GetRoutes().Select(a => a.SerializeObject(context)).ToArray(),
+            Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             State = State,
             Type = StepType,
         };
