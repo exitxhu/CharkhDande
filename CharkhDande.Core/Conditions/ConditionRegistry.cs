@@ -1,4 +1,12 @@
-﻿public class ConditionRegistry
+﻿namespace CharkhDande.Core.Conditions;
+
+public interface IConditionRegistry
+{
+    void Register(string key, Func<WorkflowContext, InitiatorMetaData, bool> action);
+    Func<WorkflowContext, InitiatorMetaData, bool> Resolve(string key);
+}
+
+public class ConditionRegistry : IConditionRegistry
 {
     private readonly Dictionary<string, Func<WorkflowContext, InitiatorMetaData, bool>> _conditions = new();
 

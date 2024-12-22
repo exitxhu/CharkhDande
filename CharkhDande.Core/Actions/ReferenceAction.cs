@@ -1,16 +1,18 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CharkhDande.Core.Actions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using System;
 
 using System;
 using System.Text.Json;
 
-public class LambdaAction : IAction
+public class ReferenceAction : IAction
 {
     private Action<WorkflowContext, InitiatorMetaData> _action;
     private readonly string _actionKey;
 
-    public LambdaAction(string actionKey)
+    public ReferenceAction(string actionKey)
     {
         _actionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
     }
@@ -44,14 +46,14 @@ public class LambdaAction : IAction
         return JsonSerializer.Serialize(SerializeObject(context));
     }
 
-    public static LambdaAction Deserialize(string serializedData)
+    public static ReferenceAction Deserialize(string serializedData)
     {
         var metadata = JsonSerializer.Deserialize<ActionSerializableObject>(serializedData);
 
         if (metadata == null)
             throw new InvalidOperationException("Invalid serialized data.");
 
-        return new LambdaAction(metadata.Key);
+        return new ReferenceAction(metadata.Key);
     }
 
     public ActionSerializableObject SerializeObject(WorkflowContext context)

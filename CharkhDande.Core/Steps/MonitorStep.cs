@@ -1,15 +1,14 @@
 ﻿
 using CharkhDande.Core;
+using CharkhDande.Core.Steps;
 
+using System;
 using System.Text.Json;
 
 using static IStep;
 
 public class MonitorStep : StepBase
 {
-    private const string STEP_TYPE = nameof(MonitorStep);
-    public override string StepType => STEP_TYPE;
-
     private readonly InitiatorMetaData initiatorMetaData;
     public MonitorStep(string id) : base(id)
     {
@@ -74,6 +73,8 @@ public class MonitorStep : StepBase
             var action = OnTimeoutActions[i];
             meta.Add("OnTimeoutActions#" + (i + 1), action.SerializeObject(context));
         }
+        meta.Add("Timeout#", Timeout.ToString());
+        meta.Add("PollingInterval#", PollingInterval.ToString());
 
         return new StepSerializeObject()
         {
@@ -83,5 +84,40 @@ public class MonitorStep : StepBase
             Type = StepType,
             MetaData = meta
         };
+    }
+}
+public class MonitorStepDeserializer() : IStepDeserializer<MonitorStep>
+{
+    public MonitorStep Deserialize(StepSerializeObject obj)
+    {
+        var res = new MonitorStep(obj.Id);
+        res.State = obj.State;
+
+        foreach (var data in obj.MetaData)
+        {
+            var split = data.Key.Split('#');
+            if (split.Length < 2)
+                continue;
+
+            if (data.Key.StartsWith("OnSuccessActions#") && data.Value is ActionSerializableObject aobj)
+            {
+                res.OnSuccessActions.Add(new ReferenceAction(aobj.Key));
+            }
+            else if (data.Key.StartsWith("OnTimeoutActions#") && data.Value is ActionSerializableObject tobj)
+            {
+                res.OnTimeoutActions.Add(new ReferenceAction(tobj.Key));
+            }
+            else if (data.Key.StartsWith("Timeout#"))
+            {
+                res.Timeout = TimeSpan.Parse(data.Value.ToString());
+            }
+            else if (data.Key.StartsWith("PollingInterval#") )
+            {
+                res.PollingInterval = TimeSpan.Parse(data.Value.ToString());
+
+            }
+        }
+
+        return res;
     }
 }

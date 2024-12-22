@@ -74,3 +74,12 @@ public class ConditionZ : ICondition
         throw new NotImplementedException();
     }
 }
+public class WFRepo : IWorkflowResolver
+{
+    public Dictionary<string, Workflow> Store { get; set; } = new();
+
+    public async Task<Workflow> FetchAsync(string id)
+    {
+        return Store.FirstOrDefault(a => a.Key == id).Value;
+    }
+}

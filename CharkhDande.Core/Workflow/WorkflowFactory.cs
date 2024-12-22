@@ -1,7 +1,11 @@
-﻿using System.Text.Json;
+﻿using CharkhDande.Core.Steps;
+
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
-public class WorkflowFactory(IServiceProvider serviceProvider)
+public class WorkflowFactory(IServiceProvider serviceProvider,
+    IWorkflowResolver workflowResolver,
+    IStepFactory stepFactory)
 {
     public Workflow GetGuidInstance()
     {
@@ -13,12 +17,9 @@ public class WorkflowFactory(IServiceProvider serviceProvider)
         var wf = new Workflow(serviceProvider, id);
         return wf;
     }
-    public Func<string, Task<Workflow>> WorkflowResolver { get; set; }
     public async Task<Workflow> FetchAsync(string id)
     {
-        if (WorkflowResolver is null)
-            throw new Exception("there is no external resolver to fetch workflows");
-        var wf = await WorkflowResolver(id);
+        var wf = await workflowResolver.FetchAsync(id);
         return wf;
     }
     public Workflow Reconstruct(string json)
@@ -27,8 +28,10 @@ public class WorkflowFactory(IServiceProvider serviceProvider)
 
         var wf = new Workflow(serviceProvider, obj.id);
 
-        var steps = obj.Steps.Select(a=> )
+        var steps = obj.Steps.Select(stepFactory.Deserialize).ToList();
 
-        return default;
+        wf.AddSteps(steps);
+
+        return wf;
     }
 }

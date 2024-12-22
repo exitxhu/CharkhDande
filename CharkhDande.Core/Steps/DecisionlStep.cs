@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using CharkhDande.Core.Steps;
+
+using System.Text.Json;
 
 using static IStep;
 
@@ -6,8 +8,6 @@ public class DecisionlStep : StepBase
 {
     private readonly InitiatorMetaData initiatorMetaData;
     private readonly DecisionOutputType type;
-    private const string STEP_TYPE = nameof(ConditionalStep);
-    public override string StepType => STEP_TYPE;
     private readonly BaseEvaluation BaseEvaluation;
     public DecisionlStep(string id, DecisionOutputType type)
         : base(id)
@@ -29,7 +29,7 @@ public class DecisionlStep : StepBase
             };
         route.Execute(context);
         State = StepState.FINISHED;
-        
+
         return new WorkflowExecutionResult
         {
 
@@ -48,6 +48,7 @@ public class DecisionlStep : StepBase
             Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             State = State,
             Type = StepType,
+            MetaData = { { "DecisionOutputType", type.ToString() } }
         };
     }
 }
@@ -74,8 +75,6 @@ internal static class RoutEvaluationStrategyResolver
         _ => throw new Exception($"Unhandled strategy for route evaluation: {type}"),
     };
 }
-
-
 internal class FirstEvaluation : BaseEvaluation
 {
     internal override IRoute? GetNextRoute(WorkflowContext context, IEnumerable<IRoute> routes)
@@ -87,4 +86,16 @@ public enum DecisionOutputType
 {
     FIRST,
     FORCED_XOR,
+}
+public class DecisionlStepDeserializer() : IStepDeserializer<DecisionlStep>
+{
+    public DecisionlStep Deserialize(StepSerializeObject obj)
+    {
+        var type = obj.MetaData["DecisionOutputType"];
+
+        var res = new DecisionlStep(obj.Id, Enum.Parse<DecisionOutputType>(type.ToString()));
+        res.State = obj.State;
+        
+        return res;
+    }
 }

@@ -9,8 +9,7 @@ public abstract class StepBase : IStep
     public string Id { get; init; }
     public IEnumerable<IRoute> Routes { get; set; }
     public StepState State { get; set; }
-
-    public abstract string StepType { get; }
+    public string StepType => GetType().FullName!;
 
     protected StepBase(string id)
     {

@@ -1,4 +1,7 @@
-﻿using FluentAssertions;
+﻿using CharkhDande.Core;
+using CharkhDande.Kesho;
+
+using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,6 +13,7 @@ public class WorkflowSerializationTests
     public async Task DeserializingWorkFlow()
     {
         var json = @"{
+  ""id"": ""4e3e4bb6-c452-4089-881c-10130be98ad5"",
   ""Steps"": [
     {
       ""Id"": ""first"",
@@ -95,20 +99,24 @@ public class WorkflowSerializationTests
         },
         ""OnTimeoutActions#1"": {
           ""Key"": ""jobTimeOutAction""
-        }
+        },
+        ""Timeout#"": ""00:00:10"",
+        ""PollingInterval#"": ""00:00:01""
       }
     },
     {
       ""Id"": ""eventStep"",
       ""State"": ""RUNNING"",
       ""Routes"": [],
-      ""Type"": ""EventListenerStep"",
-      ""MetaData"": null
+      ""Type"": ""CharkhDande.Kesho.EventListenerStep"",
+      ""MetaData"": {
+        ""EventKey#"": ""accept_topic""
+      }
     }
   ],
   ""Context"": {
     ""Properties"": {
-      ""wfid"": ""7856ce21-e8fe-490d-9285-f3a59eb79d94"",
+      ""wfid"": ""4e3e4bb6-c452-4089-881c-10130be98ad5"",
       ""jobCompleted"": true,
       ""X"": false,
       ""Y"": true,
@@ -120,9 +128,15 @@ public class WorkflowSerializationTests
     ""History"": null
   }
 }";
-        var sp = new ServiceCollection().BuildServiceProvider();
+        
+        var services = new ServiceCollection();
+        
+        var sp = services
+            .AddCharkhDande(a => a.AddKesho(services))
+            .AddSingleton<IWorkflowResolver, WFRepo>()
+            .BuildServiceProvider();
 
-        var wfactory = new WorkflowFactory(sp);
+        var wfactory = sp.GetRequiredService<WorkflowFactory>();
 
         var wf = wfactory.Reconstruct(json);
 

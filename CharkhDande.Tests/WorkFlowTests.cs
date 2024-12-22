@@ -1,3 +1,6 @@
+using CharkhDande.Core.Actions;
+using CharkhDande.Core.Conditions;
+
 using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -71,12 +74,12 @@ public class WorkFlowTests
             new ConditionalRoute("r1"){
                 NextStep= new NextStepMetadate(step1.Id),
                 _conditions = {new ReferenceCondition(Configurator.ConditionTrue) },
-                _actions = { new LambdaAction(Configurator.ActionSendEmail) }
+                _actions = { new ReferenceAction(Configurator.ActionSendEmail) }
             },
             new ConditionalRoute("r2"){
                 NextStep = new NextStepMetadate(step2.Id),
                 _conditions = {new ReferenceCondition(Configurator.ConditionFalse) },
-                _actions = { new LambdaAction(Configurator.ActionSendEmail) }
+                _actions = { new ReferenceAction(Configurator.ActionSendEmail) }
             }];
 
     }
@@ -101,7 +104,7 @@ public class WorkFlowTests
 
         var WFfactory = serviceProvider.GetRequiredService<WorkflowFactory>();
 
-        var lambdaAction = new LambdaAction(Configurator.ActionSendEmail);
+        var lambdaAction = new ReferenceAction(Configurator.ActionSendEmail);
 
         var monitorTask = new MonitorStep("monitor 1")
         {
@@ -110,11 +113,11 @@ public class WorkFlowTests
             Timeout = TimeSpan.FromSeconds(10),
             OnSuccessActions = new List<IAction>
             {
-                new LambdaAction("jobAction"),
+                new ReferenceAction("jobAction"),
             },
             OnTimeoutActions = new List<IAction>
             {
-                new LambdaAction("jobTimeOutAction"),
+                new ReferenceAction("jobTimeOutAction"),
             },
         };
 
@@ -144,7 +147,7 @@ public class WorkFlowTests
 
         var task3 = new ConditionalStep("third")
         {
-            _actions = [new LambdaAction("taskRun")]
+            Actions = [new ReferenceAction("taskRun")]
         };
         var task2 = new ConditionalStep("second")
         {
@@ -155,23 +158,23 @@ public class WorkFlowTests
             ]
     },
     ],
-            _actions = [new LambdaAction("taskRun")]
+            Actions = [new ReferenceAction("taskRun")]
         };
 
 
 
         var task1 = new ConditionalStep("first")
         {
-            _conditions = new List<ICondition>
+            Conditions = new List<ICondition>
         {
             new ReferenceCondition(Configurator.ConditionDocIdOdd),
             new ExpressionCondition(ctx => ctx.Get<int>("age") > 5)
         },
-            _actions = new List<IAction>
+            Actions = new List<IAction>
         {
-            new LambdaAction(Configurator.ActionSendEmail),
-            new LambdaAction("jobTriggerKey"),
-            new LambdaAction("dispatchEventKey")
+            new ReferenceAction(Configurator.ActionSendEmail),
+            new ReferenceAction("jobTriggerKey"),
+            new ReferenceAction("dispatchEventKey")
         },
             Routes = [new ConditionalRoute("GoTask2R") { NextStep = new NextStepMetadate(task2.Id) }]
         };

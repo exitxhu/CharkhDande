@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CharkhDande.Core;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using System;
 using System.Collections.Generic;
@@ -7,12 +9,16 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CharkhDande.Kesho;
- 
+
 public static class Helpers
 {
-    public static IServiceCollection AddKesho(this IServiceCollection services)
+    public static CharkhDandeConfig AddKesho(this CharkhDandeConfig config, IServiceCollection services)
     {
-        return services.AddSingleton<WorkflowRegistry>()
-            .AddSingleton<KafkaEventSource>();
+        config.Assemblies.Add(typeof(WorkflowRegistry).Assembly);
+
+        services.AddSingleton<WorkflowRegistry>()
+        .AddSingleton<KafkaEventSource>();
+
+        return config;
     }
 }

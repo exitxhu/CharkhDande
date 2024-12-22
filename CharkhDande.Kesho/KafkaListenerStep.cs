@@ -1,4 +1,6 @@
 ﻿
+using CharkhDande.Core.Steps;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using System.Text.Json;
@@ -10,7 +12,6 @@ namespace CharkhDande.Kesho;
 
 public class EventListenerStep : StepBase
 {
-    private const string STEP_TYPE = nameof(EventListenerStep);
     private readonly string _eventKey;
     private readonly InitiatorMetaData initiatorMetaData;
 
@@ -24,8 +25,6 @@ public class EventListenerStep : StepBase
         _eventKey = eventKey;
         _eventDateKey = () => $"{id}:{eventKey}";
     }
-
-    public override string StepType => STEP_TYPE;
 
     public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
@@ -70,7 +69,20 @@ public class EventListenerStep : StepBase
             Id = Id,
             Routes = GetRoutes()?.Select(a => a.SerializeObject(context))!,
             State = State,
-            Type = StepType
+            Type = StepType,
+            MetaData = { { "EventKey#", _eventKey } }
         };
+    }
+}
+
+public class EventListenerStepDeserializer : IStepDeserializer<EventListenerStep>
+{
+    public EventListenerStep Deserialize(StepSerializeObject obj)
+    {
+
+        var res = new EventListenerStep(obj.Id, obj.MetaData["EventKey#"].ToString()!);
+        res.State = obj.State;
+
+        return res;
     }
 }

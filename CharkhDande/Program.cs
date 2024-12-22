@@ -1,7 +1,13 @@
 ﻿
+using CharkhDande.Core;
+using CharkhDande.Core.Actions;
+using CharkhDande.Core.Conditions;
+using CharkhDande.Core.Steps;
 using CharkhDande.Kesho;
 
 using Microsoft.Extensions.DependencyInjection;
+
+using System.Diagnostics.SymbolStore;
 
 Console.WriteLine("Hello, World!");
 var services = new ServiceCollection();
@@ -11,20 +17,14 @@ services.AddTransient<IMessageService, ConsoleMessageService>();
 services.AddTransient<Repo>();
 services.AddSingleton<WFRepo>();
 
+services.AddCharkhDande(a => a.AddKesho(services));
+
+services.AddSingleton<IWorkflowResolver>(a => a.GetRequiredService<WFRepo>());
+
 services.AddSingleton<ActionRegistry>();
 services.AddSingleton<ConditionRegistry>();
-services.AddSingleton<WorkflowFactory>(a =>
-{
-    var wf = new WorkflowFactory(a);
-    wf.WorkflowResolver = async id =>
-    {
-        var t = a.GetRequiredService<WFRepo>();
-        return t.Store.FirstOrDefault(f => f.Key == id).Value;
-    };
-    return wf;
-});
 
-services.AddKesho();
+
 
 // Build the service provider
 var serviceProvider = services.BuildServiceProvider();
@@ -49,11 +49,11 @@ conditionRegistry.Register("docIdEven", (ctx, init) =>
     var ent = repo.Get(id);
     return ent.id % 2 == 1;
 });
-var lambdaAction = new LambdaAction(emailActionKey);
+var lambdaAction = new ReferenceAction(emailActionKey);
 
 var eventStep = new EventListenerStep("eventStep", "accept_topic");
 
-eventStep.Actions.Add(new LambdaAction("jobAction"));
+eventStep.Actions.Add(new ReferenceAction("jobAction"));
 
 var monitorStep = new MonitorStep("monitor 1")
 {
@@ -62,11 +62,11 @@ var monitorStep = new MonitorStep("monitor 1")
     Timeout = TimeSpan.FromSeconds(10),
     OnSuccessActions = new List<IAction>
     {
-        new LambdaAction("jobAction"),
+        new ReferenceAction("jobAction"),
     },
     OnTimeoutActions = new List<IAction>
     {
-        new LambdaAction("jobTimeOutAction"),
+        new ReferenceAction("jobTimeOutAction"),
     },
 };
 
@@ -101,7 +101,7 @@ actionRegistry.Register("taskRun", (ctx, init) => ctx.ServiceProvider.GetRequire
 
 var step3 = new ConditionalStep("third")
 {
-    _actions = [new LambdaAction("taskRun")]
+    Actions = [new ReferenceAction("taskRun")]
 };
 var step2 = new ConditionalStep("second")
 {
@@ -112,7 +112,7 @@ var step2 = new ConditionalStep("second")
             ]
     },
     ],
-    _actions = [new LambdaAction("taskRun")]
+    Actions = [new ReferenceAction("taskRun")]
 };
 
 actionRegistry.Register("jobTriggerKey", (ctx, init) =>
@@ -124,15 +124,15 @@ actionRegistry.Register("dispatchEventKey", (ctx, init) =>
 
 var step1 = new ConditionalStep("first")
 {
-    _conditions = new List<ICondition>
+    Conditions = new List<ICondition>
     {
         new ReferenceCondition("docIdEven"),
     },
-    _actions = new List<IAction>
+    Actions = new List<IAction>
     {
-        new LambdaAction(emailActionKey) ,
-    new LambdaAction("jobTriggerKey"),
-    new LambdaAction("dispatchEventKey")
+        new ReferenceAction(emailActionKey) ,
+    new ReferenceAction("jobTriggerKey"),
+    new ReferenceAction("dispatchEventKey")
     }
 ,
     Routes = [new ConditionalRoute("GoTask2R") { NextStep = new NextStepMetadate(step2.Id) }]
@@ -145,6 +145,8 @@ workflow.Context.Set("doc_id", 1);
 var evn = serviceProvider.GetRequiredService<KafkaEventSource>();
 
 workflow.AddSteps(step1, step2, step3, monitorStep, eventStep);
+
+
 
 var tasks = new List<Task>()
 {
@@ -241,7 +243,12 @@ public class ConditionZ : ICondition
     }
 }
 
-public class WFRepo
+public class WFRepo : IWorkflowResolver
 {
     public Dictionary<string, Workflow> Store { get; set; } = new();
+
+    public async Task<Workflow> FetchAsync(string id)
+    {
+        return Store.FirstOrDefault(a => a.Key == id).Value;
+    }
 }

@@ -11,6 +11,9 @@ public interface IStep : ICustomSerializable<StepSerializeObject>
     WorkflowExecutionResult Execute(WorkflowContext context);
     [JsonConverter(typeof(JsonStringEnumConverter))]
     StepState State { get; }
+    /// <summary>
+    /// FQDN
+    /// </summary>
     public string StepType { get; }
     IEnumerable<IRoute> GetRoutes();
     public class WorkflowExecutionResult
@@ -51,5 +54,5 @@ public record StepSerializeObject
     public StepState State { get; set; }
     public IEnumerable<RouteSerializableObject> Routes { get; set; }
     public string Type { get; set; }
-    public Dictionary<string, object> MetaData { get; set; }
+    public Dictionary<string, object> MetaData { get; set; } = new();
 }

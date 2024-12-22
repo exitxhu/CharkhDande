@@ -1,6 +1,14 @@
-﻿public class ActionRegistry
+﻿namespace CharkhDande.Core.Actions;
+
+public interface IActionRegistry
 {
-    private readonly Dictionary<string, Action<WorkflowContext,InitiatorMetaData>> _actions = new();
+    void Register(string key, Action<WorkflowContext, InitiatorMetaData> action);
+    Action<WorkflowContext, InitiatorMetaData> Resolve(string key);
+}
+
+public class ActionRegistry : IActionRegistry
+{
+    private readonly Dictionary<string, Action<WorkflowContext, InitiatorMetaData>> _actions = new();
 
     public void Register(string key, Action<WorkflowContext, InitiatorMetaData> action)
     {
