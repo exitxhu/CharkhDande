@@ -28,9 +28,16 @@ public class WorkflowFactory(IServiceProvider serviceProvider,
 
         var wf = new Workflow(serviceProvider, obj.id);
 
+        foreach (var val in obj.Context.Properties)
+        {
+            wf.Context.Set(val.Key, val.Value);
+        }
+
         var steps = obj.Steps.Select(stepFactory.Deserialize).ToList();
 
         wf.AddSteps(steps);
+
+        wf.CurrentStep = wf.GetStep(obj.CurrentStep.Id)!;
 
         return wf;
     }

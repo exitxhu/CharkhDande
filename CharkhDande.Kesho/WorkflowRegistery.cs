@@ -42,10 +42,10 @@ public class WorkflowRegistry(WorkflowFactory factory)
             workflow.Context.Set(((EventListenerStep)step!)._eventDateKey(), eventData);
 
             // Resume workflow
-            var check = step?.Execute(workflow.Context);
+            var check = workflow?.Next() ?? false;
 
             // Cleanup if necessary
-            if (check.Done)
+            if (check)
                 Cleanup(eventKey, subscription);
         }
     }

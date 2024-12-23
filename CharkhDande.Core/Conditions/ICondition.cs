@@ -6,5 +6,5 @@ public interface ICondition : ICustomSerializable<ConditionSerializableObject>
 }
 public class ConditionSerializableObject
 {
-    public string Key { get; internal set; }
+    public string Key { get; set; }
 }

@@ -7,5 +7,5 @@ public interface IAction: ICustomSerializable<ActionSerializableObject>
 
 public class ActionSerializableObject
 {
-    public string Key { get; internal set; }
+    public string Key { get; set; }
 }

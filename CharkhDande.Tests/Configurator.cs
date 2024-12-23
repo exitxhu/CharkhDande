@@ -17,7 +17,7 @@ public static class Configurator
     public const string ConditionTrue = "true";
     public const string ConditionFalse = "false";
 
-    public static void RegisterConditions(ConditionRegistry conditionRegistry)
+    public static void RegisterConditions(IConditionRegistry conditionRegistry)
     {
         conditionRegistry.Register(ConditionDocIdOdd, (ctx, init) =>
         {
@@ -30,7 +30,7 @@ public static class Configurator
         conditionRegistry.Register(ConditionTrue, (ctx, init) => true);
     }
 
-    public static void RegisterActions(ActionRegistry actionRegistry)
+    public static void RegisterActions(IActionRegistry actionRegistry)
     {
         actionRegistry.Register(ActionSendEmail, (ctx, init) =>
         {

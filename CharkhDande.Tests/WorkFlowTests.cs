@@ -1,5 +1,7 @@
+using CharkhDande.Core;
 using CharkhDande.Core.Actions;
 using CharkhDande.Core.Conditions;
+using CharkhDande.Kesho;
 
 using FluentAssertions;
 
@@ -16,14 +18,15 @@ public class WorkFlowTests
 
         services.AddTransient<IMessageService, ConsoleMessageService>();
         services.AddTransient<Repo>();
-        services.AddSingleton<ActionRegistry>();
-        services.AddSingleton<ConditionRegistry>();
-        services.AddTransient<WorkflowFactory>();
+        services.AddCharkhDande(a => a
+             .AddKesho(services)
+             .AddWorkflowResolver<WFRepo>(services));
+
 
         var serviceProvider = services.BuildServiceProvider();
 
-        var actionReg = serviceProvider.GetRequiredService<ActionRegistry>();
-        var conditionReg = serviceProvider.GetRequiredService<ConditionRegistry>();
+        var actionReg = serviceProvider.GetRequiredService<IActionRegistry>();
+        var conditionReg = serviceProvider.GetRequiredService<IConditionRegistry>();
 
         Configurator.RegisterActions(actionReg);
         Configurator.RegisterConditions(conditionReg);
@@ -43,14 +46,15 @@ public class WorkFlowTests
 
         services.AddTransient<IMessageService, ConsoleMessageService>();
         services.AddTransient<Repo>();
-        services.AddSingleton<ActionRegistry>();
-        services.AddSingleton<ConditionRegistry>();
-        services.AddTransient<WorkflowFactory>();
+        services.AddCharkhDande(a => a
+             .AddKesho(services)
+             .AddWorkflowResolver<WFRepo>(services));
+
 
         var serviceProvider = services.BuildServiceProvider();
 
-        var actionReg = serviceProvider.GetRequiredService<ActionRegistry>();
-        var conditionReg = serviceProvider.GetRequiredService<ConditionRegistry>();
+        var actionReg = serviceProvider.GetRequiredService<IActionRegistry>();
+        var conditionReg = serviceProvider.GetRequiredService<IConditionRegistry>();
 
         Configurator.RegisterActions(actionReg);
         Configurator.RegisterConditions(conditionReg);
@@ -68,19 +72,24 @@ public class WorkFlowTests
 
         var step2 = new ConditionalStep("step2");
 
-        var decision = new DecisionlStep("decision", DecisionOutputType.FORCED_XOR);
+        var decision = new DecisionlStep("decision", DecisionOutputType.FORCED_XOR)
+        {
+            IsFirstStep = true,
+        };
 
         decision.Routes = [
             new ConditionalRoute("r1"){
-                NextStep= new NextStepMetadate(step1.Id),
-                _conditions = {new ReferenceCondition(Configurator.ConditionTrue) },
-                _actions = { new ReferenceAction(Configurator.ActionSendEmail) }
+                NextStep= new NextStepMetadata(step1.Id),
+                Conditions = {new ReferenceCondition(Configurator.ConditionTrue) },
+                Actions = { new ReferenceAction(Configurator.ActionSendEmail) }
             },
             new ConditionalRoute("r2"){
-                NextStep = new NextStepMetadate(step2.Id),
-                _conditions = {new ReferenceCondition(Configurator.ConditionFalse) },
-                _actions = { new ReferenceAction(Configurator.ActionSendEmail) }
+                NextStep = new NextStepMetadata(step2.Id),
+                Conditions = {new ReferenceCondition(Configurator.ConditionFalse) },
+                Actions = { new ReferenceAction(Configurator.ActionSendEmail) }
             }];
+
+        myWorkFlow.AddSteps(decision, step1, step2);
 
     }
     [Fact]
@@ -93,6 +102,10 @@ public class WorkFlowTests
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton<ConditionRegistry>();
         services.AddTransient<WorkflowFactory>();
+
+        services.AddCharkhDande(a => a
+            .AddKesho(services)
+            .AddWorkflowResolver<WFRepo>(services));
 
         var serviceProvider = services.BuildServiceProvider();
 
@@ -119,6 +132,7 @@ public class WorkFlowTests
             {
                 new ReferenceAction("jobTimeOutAction"),
             },
+            IsFirstStep = true
         };
 
 
@@ -141,9 +155,6 @@ public class WorkFlowTests
 
         bool result = groupedCondition.Evaluate(workflow.Context, new(InitiatorType.WorkFlow, "0"));
 
-        workflow.StartStep = monitorTask;
-        // Link the Workflow
-
 
         var task3 = new ConditionalStep("third")
         {
@@ -152,8 +163,8 @@ public class WorkFlowTests
         var task2 = new ConditionalStep("second")
         {
             Routes = [ new ConditionalRoute("GoTask3R"){
-        NextStep = new NextStepMetadate(task3.Id),
-        _conditions = [
+        NextStep = new NextStepMetadata(task3.Id),
+        Conditions = [
             new ReferenceCondition(Configurator.ConditionDocIdOdd)
             ]
     },
@@ -176,12 +187,14 @@ public class WorkFlowTests
             new ReferenceAction("jobTriggerKey"),
             new ReferenceAction("dispatchEventKey")
         },
-            Routes = [new ConditionalRoute("GoTask2R") { NextStep = new NextStepMetadate(task2.Id) }]
+            Routes = [new ConditionalRoute("GoTask2R") { NextStep = new NextStepMetadata(task2.Id) }]
         };
-        monitorTask.Routes = [new ConditionalRoute("GoTask1R") { NextStep = new NextStepMetadate(task1.Id) }];
+        monitorTask.Routes = [new ConditionalRoute("GoTask1R") { NextStep = new NextStepMetadata(task1.Id) }];
         // Run the Workflow
         workflow.Context.Set("age", 10);
         workflow.Context.Set("doc_id", 1);
+
+        workflow.AddSteps(monitorTask, task1, task2, task3);
 
 
         var tasks = new List<Task>()

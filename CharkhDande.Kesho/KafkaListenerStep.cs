@@ -36,7 +36,10 @@ public class EventListenerStep : StepBase
         var checkData = context.TryGet<object>(_eventDateKey(), out var data);
         if (checkData)
         {
+            Console.WriteLine($"Workflow {context.Get<string>(WorkflowConstants.WORKFLOW_ID)} is processing valid event: {_eventKey}");
+
             Actions.ForEach(a => a.Execute(context, initiatorMetaData));
+            State = StepState.FINISHED;
             res.Done = true;
         }
         else
@@ -69,8 +72,9 @@ public class EventListenerStep : StepBase
             Id = Id,
             Routes = GetRoutes()?.Select(a => a.SerializeObject(context))!,
             State = State,
+            IsFirstStep = IsFirstStep,
             Type = StepType,
-            MetaData = { { "EventKey#", _eventKey } }
+            MetaData = { { "EventKey#", new(_eventKey) } }
         };
     }
 }
@@ -79,8 +83,12 @@ public class EventListenerStepDeserializer : IStepDeserializer<EventListenerStep
 {
     public EventListenerStep Deserialize(StepSerializeObject obj)
     {
+        var t = obj.MetaData["EventKey#"];
 
-        var res = new EventListenerStep(obj.Id, obj.MetaData["EventKey#"].ToString()!);
+        var res = new EventListenerStep(obj.Id, t.Value);
+
+        res.IsFirstStep = obj.IsFirstStep;
+
         res.State = obj.State;
 
         return res;

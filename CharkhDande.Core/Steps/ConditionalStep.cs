@@ -47,23 +47,24 @@ public class ConditionalStep : StepBase
 
     public override StepSerializeObject SerializeObject(WorkflowContext context)
     {
-        var meta = new Dictionary<string, object>();
+        var meta = new Dictionary<string, StepMetadata>();
 
         for (int i = 0; i < Conditions.Count; i++)
         {
             var condition = Conditions[i];
-            meta.Add("Conditions#" + (i + 1), condition.SerializeObject(context));
+            meta.Add("Conditions#" + (i + 1), new(condition.Serialize(context), typeof(ConditionSerializableObject).FullName));
         }
         for (int i = 0; i < Actions.Count; i++)
         {
             var action = Actions[i];
-            meta.Add("Actions#" + (i + 1), action.SerializeObject(context));
+            meta.Add("Actions#" + (i + 1), new(action.Serialize(context), typeof(ActionSerializableObject).FullName));
         }
         return new StepSerializeObject
         {
             Id = Id,
             Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             State = State,
+            IsFirstStep = IsFirstStep,
             Type = StepType,
             MetaData = meta
         };
@@ -77,16 +78,19 @@ public class ConditionalStepDeserializer() : IStepDeserializer<ConditionalStep>
     {
         var res = new ConditionalStep(obj.Id);
         res.State = obj.State;
+        res.IsFirstStep = obj.IsFirstStep;
 
         foreach (var data in obj.MetaData)
         {
             if (data.Key.StartsWith("Actions#"))
             {
-                //res.Actions.Add(new ReferenceAction(aobj.Key));
+                var t = JsonSerializer.Deserialize<ActionSerializableObject>(data.Value.Value);
+                res.Actions.Add(new ReferenceAction(t.Key));
             }
             else if (data.Key.StartsWith("Conditions"))
             {
-                //res.Conditions.Add(new ReferenceCondition(cobj.Key));
+                var t = JsonSerializer.Deserialize<ConditionSerializableObject>(data.Value.Value);
+                res.Conditions.Add(new ReferenceCondition(t.Key));
             }
         }
 

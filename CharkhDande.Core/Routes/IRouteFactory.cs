@@ -1,4 +1,4 @@
-﻿using CharkhDande.Core.Routes;
+﻿using CharkhDande.Core.Steps;
 
 using System;
 using System.Collections.Generic;
@@ -7,19 +7,21 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CharkhDande.Core.Steps;
+namespace CharkhDande.Core.Routes;
 
-public interface IStepFactory
+public interface IRouteFactory
 {
-    void AddDeserializer<T>(IStepDeserializer<T> parser) where T : IStep;
-    IStep Deserialize(StepSerializeObject obj);
-    IStepDeserializer<T> GetDeserializer<T>(string type) where T : IStep;
+    void AddDeserializer<T>(IRouteDeserializer<T> parser) where T : IRoute;
+    IRoute Deserialize(RouteSerializableObject obj);
+    IRouteDeserializer<T> GetDeserializer<T>(string type) where T : IRoute;
 }
-public interface IStepDeserializer<T> where T : IStep
+
+public interface IRouteDeserializer<T> where T : IRoute
 {
-    T Deserialize(StepSerializeObject obj);
+    T Deserialize(RouteSerializableObject obj);
 }
-public class StepFactory(IRouteFactory routeFactory) : IStepFactory
+
+public class RouteFactory : IRouteFactory
 {
     private readonly Dictionary<string, Type> _typeMappings = new();
     private readonly Dictionary<string, object> _deserializer = new();
@@ -29,23 +31,23 @@ public class StepFactory(IRouteFactory routeFactory) : IStepFactory
     {
         if (!_cachedDeserializerMethods.TryGetValue(type, out var method))
         {
-            method = typeof(StepFactory)
+            method = typeof(RouteFactory)
                 .GetMethod(nameof(GetDeserializer), BindingFlags.Public | BindingFlags.Instance)!
                 .MakeGenericMethod(type);
             _cachedDeserializerMethods[type] = method;
         }
         return method;
     }
-    public void AddDeserializer<T>(IStepDeserializer<T> deserializer) where T : IStep
+    public void AddDeserializer<T>(IRouteDeserializer<T> deserializer) where T : IRoute
     {
         var type = typeof(T).FullName;
         _deserializer[type] = deserializer;
         _typeMappings[type] = typeof(T);
     }
 
-    public IStepDeserializer<T> GetDeserializer<T>(string type) where T : IStep
+    public IRouteDeserializer<T> GetDeserializer<T>(string type) where T : IRoute
     {
-        if (_deserializer.TryGetValue(type, out var parser) && parser is IStepDeserializer<T> typedDeserializer)
+        if (_deserializer.TryGetValue(type, out var parser) && parser is IRouteDeserializer<T> typedDeserializer)
         {
             return typedDeserializer;
         }
@@ -53,7 +55,7 @@ public class StepFactory(IRouteFactory routeFactory) : IStepFactory
         throw new KeyNotFoundException($"Parser for type '{type}' not found.");
     }
 
-    public IStep Deserialize(StepSerializeObject obj)
+    public IRoute Deserialize(RouteSerializableObject obj)
     {
         if (_typeMappings.TryGetValue(obj.Type, out var stepType))
         {
@@ -62,15 +64,12 @@ public class StepFactory(IRouteFactory routeFactory) : IStepFactory
             var res = method.Invoke(this, [obj.Type]);
 
             var desMeth = res.GetType()
-                  .GetMethod(nameof(IStepDeserializer<IStep>.Deserialize), BindingFlags.Public | BindingFlags.Instance);
+                  .GetMethod(nameof(IRouteDeserializer<IRoute>.Deserialize), BindingFlags.Public | BindingFlags.Instance);
 
             var step = desMeth.Invoke(res, [obj]);
 
-
-            if (step is IStep sss)
+            if (step is IRoute sss)
             {
-                var routes = obj.Routes.Select(routeFactory.Deserialize);
-                sss.SetRoutes(routes);
                 return sss;
             }
         }

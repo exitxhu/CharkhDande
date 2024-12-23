@@ -9,15 +9,17 @@ public interface IRoute : ICustomSerializable<RouteSerializableObject>
     public string Id { get; }
     bool Execute(WorkflowContext context);
     bool Evaluate(WorkflowContext context);
-    NextStepMetadate NextStep { get; }
+    public string RouteType { get; }
+    public NextStepMetadata NextStep { get; }
 
 }
 public class RouteSerializableObject
 {
     public string Id { get; set; }
-    public IEnumerable<ActionSerializableObject> Action { get; set; }
-    public IEnumerable<ConditionSerializableObject> Condition { get; set; }
-    public NextStepMetadate NextStepId { get; set; }
+    public IEnumerable<ActionSerializableObject> Actions { get; set; }
+    public IEnumerable<ConditionSerializableObject> Conditions { get; set; }
+    public string Type { get; set; }
+    public NextStepMetadata NextStepId { get; set; }
 }
-public record NextStepMetadate(string id);
+public record NextStepMetadata(string id);
 

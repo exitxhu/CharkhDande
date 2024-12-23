@@ -1,5 +1,6 @@
 ﻿using CharkhDande.Core;
 
+using System.Security.AccessControl;
 using System.Text.Json.Serialization;
 
 
@@ -15,7 +16,10 @@ public interface IStep : ICustomSerializable<StepSerializeObject>
     /// FQDN
     /// </summary>
     public string StepType { get; }
+    bool IsFirstStep { get; set; }
+
     IEnumerable<IRoute> GetRoutes();
+    void SetRoutes(params IEnumerable<IRoute> routes);
     public class WorkflowExecutionResult
     {
         public bool Done { get; set; }
@@ -54,5 +58,14 @@ public record StepSerializeObject
     public StepState State { get; set; }
     public IEnumerable<RouteSerializableObject> Routes { get; set; }
     public string Type { get; set; }
-    public Dictionary<string, object> MetaData { get; set; } = new();
+    public bool IsFirstStep { get; set; }
+    public Dictionary<string, StepMetadata> MetaData { get; set; } = new();
+}
+[method: JsonConstructorAttribute]
+public record StepMetadata(string Value, string Type)
+{
+    public StepMetadata(object obj) : this(obj.ToString(), obj.GetType().FullName)
+    {
+
+    }
 }

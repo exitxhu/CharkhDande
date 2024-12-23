@@ -13,7 +13,7 @@ public class WorkflowSerializationTests
     public async Task DeserializingWorkFlow()
     {
         var json = @"{
-  ""id"": ""4e3e4bb6-c452-4089-881c-10130be98ad5"",
+  ""id"": ""5775f115-86bc-495e-890b-2fdccee536b9"",
   ""Steps"": [
     {
       ""Id"": ""first"",
@@ -21,26 +21,32 @@ public class WorkflowSerializationTests
       ""Routes"": [
         {
           ""Id"": ""GoTask2R"",
-          ""Action"": [],
-          ""Condition"": [],
+          ""Actions"": [],
+          ""Conditions"": [],
+          ""Type"": ""ConditionalRoute"",
           ""NextStepId"": {
             ""id"": ""second""
           }
         }
       ],
       ""Type"": ""ConditionalStep"",
+      ""IsFirstStep"": false,
       ""MetaData"": {
-        ""Consitions#1"": {
-          ""Key"": ""docIdEven""
+        ""Conditions#1"": {
+          ""Value"": ""{\""Key\"":\""docIdEven\""}"",
+          ""Type"": ""ConditionSerializableObject""
         },
         ""Actions#1"": {
-          ""Key"": ""sendEmailOnCondition""
+          ""Value"": ""{\""Key\"":\""sendEmailOnCondition\""}"",
+          ""Type"": ""ActionSerializableObject""
         },
         ""Actions#2"": {
-          ""Key"": ""jobTriggerKey""
+          ""Value"": ""{\""Key\"":\""jobTriggerKey\""}"",
+          ""Type"": ""ActionSerializableObject""
         },
         ""Actions#3"": {
-          ""Key"": ""dispatchEventKey""
+          ""Value"": ""{\""Key\"":\""dispatchEventKey\""}"",
+          ""Type"": ""ActionSerializableObject""
         }
       }
     },
@@ -50,21 +56,24 @@ public class WorkflowSerializationTests
       ""Routes"": [
         {
           ""Id"": ""GoTask3R"",
-          ""Action"": [],
-          ""Condition"": [
+          ""Actions"": [],
+          ""Conditions"": [
             {
               ""Key"": ""docIdEven""
             }
           ],
+          ""Type"": ""ConditionalRoute"",
           ""NextStepId"": {
             ""id"": ""third""
           }
         }
       ],
       ""Type"": ""ConditionalStep"",
+      ""IsFirstStep"": false,
       ""MetaData"": {
         ""Actions#1"": {
-          ""Key"": ""taskRun""
+          ""Value"": ""{\""Key\"":\""taskRun\""}"",
+          ""Type"": ""ActionSerializableObject""
         }
       }
     },
@@ -73,9 +82,11 @@ public class WorkflowSerializationTests
       ""State"": ""WAITING"",
       ""Routes"": [],
       ""Type"": ""ConditionalStep"",
+      ""IsFirstStep"": false,
       ""MetaData"": {
         ""Actions#1"": {
-          ""Key"": ""taskRun""
+          ""Value"": ""{\""Key\"":\""taskRun\""}"",
+          ""Type"": ""ActionSerializableObject""
         }
       }
     },
@@ -85,23 +96,33 @@ public class WorkflowSerializationTests
       ""Routes"": [
         {
           ""Id"": ""GoTask1R"",
-          ""Action"": [],
-          ""Condition"": [],
+          ""Actions"": [],
+          ""Conditions"": [],
+          ""Type"": ""ConditionalRoute"",
           ""NextStepId"": {
             ""id"": ""eventStep""
           }
         }
       ],
       ""Type"": ""MonitorStep"",
+      ""IsFirstStep"": true,
       ""MetaData"": {
         ""OnSuccessActions#1"": {
-          ""Key"": ""jobAction""
+          ""Value"": ""{\""Key\"":\""jobAction\""}"",
+          ""Type"": ""ActionSerializableObject""
         },
         ""OnTimeoutActions#1"": {
-          ""Key"": ""jobTimeOutAction""
+          ""Value"": ""{\""Key\"":\""jobTimeOutAction\""}"",
+          ""Type"": ""ActionSerializableObject""
         },
-        ""Timeout#"": ""00:00:10"",
-        ""PollingInterval#"": ""00:00:01""
+        ""Timeout#"": {
+          ""Value"": ""00:00:10"",
+          ""Type"": ""System.TimeSpan""
+        },
+        ""PollingInterval#"": {
+          ""Value"": ""00:00:01"",
+          ""Type"": ""System.TimeSpan""
+        }
       }
     },
     {
@@ -109,14 +130,18 @@ public class WorkflowSerializationTests
       ""State"": ""RUNNING"",
       ""Routes"": [],
       ""Type"": ""CharkhDande.Kesho.EventListenerStep"",
+      ""IsFirstStep"": false,
       ""MetaData"": {
-        ""EventKey#"": ""accept_topic""
+        ""EventKey#"": {
+          ""Value"": ""accept_topic"",
+          ""Type"": ""System.String""
+        }
       }
     }
   ],
   ""Context"": {
     ""Properties"": {
-      ""wfid"": ""4e3e4bb6-c452-4089-881c-10130be98ad5"",
+      ""wfid"": ""5775f115-86bc-495e-890b-2fdccee536b9"",
       ""jobCompleted"": true,
       ""X"": false,
       ""Y"": true,
@@ -126,11 +151,24 @@ public class WorkflowSerializationTests
       ""eventStep:accept_topic"": ""something""
     },
     ""History"": null
+  },
+  ""CurrentStep"": {
+    ""Id"": ""eventStep"",
+    ""State"": ""RUNNING"",
+    ""Routes"": [],
+    ""Type"": ""CharkhDande.Kesho.EventListenerStep"",
+    ""IsFirstStep"": false,
+    ""MetaData"": {
+      ""EventKey#"": {
+        ""Value"": ""accept_topic"",
+        ""Type"": ""System.String""
+      }
+    }
   }
 }";
-        
+
         var services = new ServiceCollection();
-        
+
         var sp = services
             .AddCharkhDande(a => a.AddKesho(services))
             .AddSingleton<IWorkflowResolver, WFRepo>()
@@ -140,6 +178,10 @@ public class WorkflowSerializationTests
 
         var wf = wfactory.Reconstruct(json);
 
+        var js = wf.ExportWorkFlow();
+
         wf.Should().NotBeNull();
+
+        js.Should().Be(json);
     }
 }

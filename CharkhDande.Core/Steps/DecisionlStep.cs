@@ -46,9 +46,10 @@ public class DecisionlStep : StepBase
         {
             Id = Id,
             Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
+            IsFirstStep = IsFirstStep,
             State = State,
             Type = StepType,
-            MetaData = { { "DecisionOutputType", type.ToString() } }
+            MetaData = { { "DecisionOutputType#", new(type.ToString(), typeof(DecisionOutputType).FullName) } }
         };
     }
 }
@@ -91,11 +92,14 @@ public class DecisionlStepDeserializer() : IStepDeserializer<DecisionlStep>
 {
     public DecisionlStep Deserialize(StepSerializeObject obj)
     {
-        var type = obj.MetaData["DecisionOutputType"];
+        var type = obj.MetaData["DecisionOutputType#"];
 
-        var res = new DecisionlStep(obj.Id, Enum.Parse<DecisionOutputType>(type.ToString()));
-        res.State = obj.State;
+        var res = new DecisionlStep(obj.Id, Enum.Parse<DecisionOutputType>(type.Value));
         
+        res.IsFirstStep = obj.IsFirstStep;
+
+        res.State = obj.State;
+
         return res;
     }
 }

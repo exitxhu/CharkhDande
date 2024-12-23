@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 public class Workflow
 {
@@ -30,11 +31,12 @@ public class Workflow
         _loopDetectionPolicy = loopDetectionPolicy;
     }
 
-    public IStep StartStep { get; set; }
+    [JsonIgnore]
+    public IStep StartStep => _steps.SingleOrDefault(a => a.Value.IsFirstStep).Value;
+    [JsonInclude]
+    public IStep CurrentStep { get; internal set; }
     public void AddSteps(params IEnumerable<IStep> steps)
     {
-        if (!CheckState())
-            throw new Exception("Workflow is not in a defenitive state");
         foreach (var step in steps)
         {
             if (!CheckState())
@@ -42,33 +44,37 @@ public class Workflow
             _steps.Add(step.Id, step);
         }
     }
-    public void Next()
+    public bool Next()
     {
-        _loopDetectionPolicy?.Clear(); // Ensure a clean slate for each run
+        _loopDetectionPolicy?.Clear();
 
-        var currentStep = StartStep;
 
-        currentStep.Execute(Context);
+        CurrentStep.Execute(Context);
 
-        var routes = currentStep.GetRoutes();
+        var routes = CurrentStep.GetRoutes();
 
         foreach (var route in routes)
         {
             if (!route.Execute(Context))
             {
                 Console.WriteLine("something failed");
+                return false;
             }
+            CurrentStep = this.GetStep(route.NextStep.id);
         }
+        return true;
     }
 
     public void Run()
     {
-        _loopDetectionPolicy?.Clear(); // Ensure a clean slate for each run
-        var currentStep = StartStep;
-        currentStep = GoThroughSteps(currentStep);
+        _loopDetectionPolicy?.Clear();
+        CurrentStep = StartStep;
+        CurrentStep = GoThroughSteps(CurrentStep);
     }
     public bool CheckState()
     {
+        if (_steps.Count(a => a.Value.IsFirstStep) > 1)
+            return false;
         return true;
     }
     private IStep? GoThroughSteps(IStep currentStep)
@@ -104,11 +110,12 @@ public class Workflow
         var wf = new WorkflowSerializableObject(
             this.Id,
             _steps.Select(a => a.Value.SerializeObject(Context)),
-            Context.SerializeObject()
+            Context.SerializeObject(),
+            CurrentStep.SerializeObject(Context)
         );
         return JsonSerializer.Serialize(wf, new JsonSerializerOptions
         {
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // Reduces escaping
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             WriteIndented = true
         });
     }
@@ -124,4 +131,4 @@ public static class WorkflowHelper
     }
 }
 
-internal record WorkflowSerializableObject(string id, IEnumerable<StepSerializeObject> Steps, ContextSerializableObject Context);
+public record WorkflowSerializableObject(string id, IEnumerable<StepSerializeObject> Steps, ContextSerializableObject Context, StepSerializeObject CurrentStep);

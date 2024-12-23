@@ -94,7 +94,7 @@ workflow.Context.Set("Z", true);
 
 bool result = groupedCondition.Evaluate(workflow.Context, new(InitiatorType.WorkFlow, "0"));
 
-workflow.StartStep = monitorStep;
+monitorStep.IsFirstStep = true;
 // Link the Workflow
 
 actionRegistry.Register("taskRun", (ctx, init) => ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage($"task {init.InitiatorId} runs"));
@@ -106,8 +106,8 @@ var step3 = new ConditionalStep("third")
 var step2 = new ConditionalStep("second")
 {
     Routes = [ new ConditionalRoute("GoTask3R"){
-        NextStep = new NextStepMetadate( step3.Id),
-        _conditions = [
+        NextStep = new NextStepMetadata( step3.Id),
+        Conditions = [
             new ReferenceCondition("docIdEven")
             ]
     },
@@ -135,9 +135,9 @@ var step1 = new ConditionalStep("first")
     new ReferenceAction("dispatchEventKey")
     }
 ,
-    Routes = [new ConditionalRoute("GoTask2R") { NextStep = new NextStepMetadate(step2.Id) }]
+    Routes = [new ConditionalRoute("GoTask2R") { NextStep = new NextStepMetadata(step2.Id) }]
 };
-monitorStep.Routes = [new ConditionalRoute("GoTask1R") { NextStep = new NextStepMetadate(eventStep.Id) }];
+monitorStep.Routes = [new ConditionalRoute("GoTask1R") { NextStep = new NextStepMetadata(eventStep.Id) }];
 // Run the Workflow
 workflow.Context.Set("age", 10);
 workflow.Context.Set("doc_id", 1);
@@ -156,12 +156,12 @@ Task.Run(workflow.Run),
 
 Task.Run(async () =>
 {
-    await Task.Delay(200);
+    await Task.Delay(5000);
     workflow.Context.Set("jobCompleted", true);
 }),
 Task.Run(async () =>
 {
-    await Task.Delay(2000);
+    await Task.Delay(10000);
     evn.PushEvent("accept_topic", "something");
 })
 };

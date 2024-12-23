@@ -6,6 +6,7 @@ using System;
 using System.Text.Json;
 
 using static IStep;
+using static System.Collections.Specialized.BitVector32;
 
 public class MonitorStep : StepBase
 {
@@ -61,26 +62,27 @@ public class MonitorStep : StepBase
 
     public override StepSerializeObject SerializeObject(WorkflowContext context)
     {
-        var meta = new Dictionary<string, object>();
+        var meta = new Dictionary<string, StepMetadata>();
 
         for (int i = 0; i < OnSuccessActions.Count; i++)
         {
             var action = OnSuccessActions[i];
-            meta.Add("OnSuccessActions#" + (i + 1), action.SerializeObject(context));
+            meta.Add("OnSuccessActions#" + (i + 1), new(action.Serialize(context), typeof(ActionSerializableObject).FullName));
         }
         for (int i = 0; i < OnTimeoutActions.Count; i++)
         {
             var action = OnTimeoutActions[i];
-            meta.Add("OnTimeoutActions#" + (i + 1), action.SerializeObject(context));
+            meta.Add("OnTimeoutActions#" + (i + 1), new(action.Serialize(context), typeof(ActionSerializableObject).FullName));
         }
-        meta.Add("Timeout#", Timeout.ToString());
-        meta.Add("PollingInterval#", PollingInterval.ToString());
+        meta.Add("Timeout#", new(Timeout.ToString(), typeof(TimeSpan).FullName));
+        meta.Add("PollingInterval#", new StepMetadata(PollingInterval.ToString(), typeof(TimeSpan).FullName));
 
         return new StepSerializeObject()
         {
             State = State,
             Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             Id = Id,
+            IsFirstStep = IsFirstStep,
             Type = StepType,
             MetaData = meta
         };
@@ -92,6 +94,7 @@ public class MonitorStepDeserializer() : IStepDeserializer<MonitorStep>
     {
         var res = new MonitorStep(obj.Id);
         res.State = obj.State;
+        res.IsFirstStep = obj.IsFirstStep;
 
         foreach (var data in obj.MetaData)
         {
@@ -99,21 +102,23 @@ public class MonitorStepDeserializer() : IStepDeserializer<MonitorStep>
             if (split.Length < 2)
                 continue;
 
-            if (data.Key.StartsWith("OnSuccessActions#") && data.Value is ActionSerializableObject aobj)
+            if (data.Key.StartsWith("OnSuccessActions#"))
             {
-                res.OnSuccessActions.Add(new ReferenceAction(aobj.Key));
+                var t = JsonSerializer.Deserialize<ActionSerializableObject>(data.Value.Value);
+                res.OnSuccessActions.Add(new ReferenceAction(t.Key));
             }
-            else if (data.Key.StartsWith("OnTimeoutActions#") && data.Value is ActionSerializableObject tobj)
+            else if (data.Key.StartsWith("OnTimeoutActions#"))
             {
-                res.OnTimeoutActions.Add(new ReferenceAction(tobj.Key));
+                var t = JsonSerializer.Deserialize<ActionSerializableObject>(data.Value.Value);
+                res.OnTimeoutActions.Add(new ReferenceAction(t.Key));
             }
             else if (data.Key.StartsWith("Timeout#"))
             {
-                res.Timeout = TimeSpan.Parse(data.Value.ToString());
+                res.Timeout = TimeSpan.Parse(data.Value.Value.ToString());
             }
-            else if (data.Key.StartsWith("PollingInterval#") )
+            else if (data.Key.StartsWith("PollingInterval#"))
             {
-                res.PollingInterval = TimeSpan.Parse(data.Value.ToString());
+                res.PollingInterval = TimeSpan.Parse(data.Value.Value.ToString());
 
             }
         }

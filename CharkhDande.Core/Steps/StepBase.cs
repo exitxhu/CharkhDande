@@ -7,9 +7,11 @@ using static Workflow;
 public abstract class StepBase : IStep
 {
     public string Id { get; init; }
-    public IEnumerable<IRoute> Routes { get; set; }
+    public List<IRoute> Routes { get; set; } = new();
     public StepState State { get; set; }
     public string StepType => GetType().FullName!;
+
+    public bool IsFirstStep { get; set; }
 
     protected StepBase(string id)
     {
@@ -18,7 +20,7 @@ public abstract class StepBase : IStep
 
     public abstract WorkflowExecutionResult Execute(WorkflowContext context);
 
-    public IEnumerable<IRoute> GetRoutes() => Routes ?? Enumerable.Empty<IRoute>();
+    public IEnumerable<IRoute> GetRoutes() => Routes;
 
     public abstract string Serialize(WorkflowContext context);
     //{
@@ -26,6 +28,11 @@ public abstract class StepBase : IStep
     //}
 
     public abstract StepSerializeObject SerializeObject(WorkflowContext context);
+
+    public void SetRoutes(params IEnumerable<IRoute> routes)
+    {
+        Routes.AddRange(routes);
+    }
     //{
     //    var obj = new StepSerializeObject
     //    {
