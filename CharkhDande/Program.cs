@@ -142,7 +142,7 @@ monitorStep.Routes = [new ConditionalRoute("GoTask1R") { NextStep = new NextStep
 workflow.Context.Set("age", 10);
 workflow.Context.Set("doc_id", 1);
 
-var evn = serviceProvider.GetRequiredService<KafkaEventSource>();
+var evn = serviceProvider.GetRequiredService<GeneralEventSource>();
 
 workflow.AddSteps(step1, step2, step3, monitorStep, eventStep);
 

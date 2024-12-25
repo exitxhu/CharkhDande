@@ -17,7 +17,7 @@ public static class Helpers
         config.Assemblies.Add(typeof(WorkflowRegistry).Assembly);
 
         services.AddSingleton<WorkflowRegistry>()
-        .AddSingleton<KafkaEventSource>();
+        .AddSingleton<GeneralEventSource>();
 
         return config;
     }

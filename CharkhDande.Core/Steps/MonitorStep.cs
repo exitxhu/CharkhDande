@@ -98,10 +98,6 @@ public class MonitorStepDeserializer() : IStepDeserializer<MonitorStep>
 
         foreach (var data in obj.MetaData)
         {
-            var split = data.Key.Split('#');
-            if (split.Length < 2)
-                continue;
-
             if (data.Key.StartsWith("OnSuccessActions#"))
             {
                 var t = JsonSerializer.Deserialize<ActionSerializableObject>(data.Value.Value);
