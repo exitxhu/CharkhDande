@@ -15,5 +15,4 @@
     <ProjectReference Include="..\CharkhDande.Core\CharkhDande.Core.csproj" />
     <ProjectReference Include="..\CharkhDande.Kesho\CharkhDande.Kesho.csproj" />
   </ItemGroup>
-
 </Project>

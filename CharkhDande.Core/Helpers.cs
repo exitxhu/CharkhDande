@@ -111,7 +111,7 @@ public static class Helpers
         });
     }
 
-    public static CharkhDandeConfig AddWorkflowResolver<T>(this CharkhDandeConfig config, ServiceCollection services) where T : class, IWorkflowResolver
+    public static CharkhDandeConfig AddWorkflowResolver<T>(this CharkhDandeConfig config, IServiceCollection services) where T : class, IWorkflowResolver
     {
         services.AddTransient<IWorkflowResolver, T>();
         return config;
