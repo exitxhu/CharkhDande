@@ -39,7 +39,7 @@ public class WorkflowFactory(IServiceProvider serviceProvider,
             wf.Context.Set(val.Key, val.Value);
         }
 
-        var steps = obj.Steps.Select(stepFactory.Deserialize).ToList();
+        var steps = obj.Steps.Select(stepFactory.Deserialize).ToList(); 
 
         wf.AddSteps(steps);
 
