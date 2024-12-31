@@ -10,7 +10,6 @@ public class Workflow
 {
     private readonly IServiceProvider _serviceProvider;
     private ILoopDetectionPolicy? _loopDetectionPolicy = null;
-    private IStep currentStep;
     internal readonly Dictionary<string, IStep> _steps = new();
     public WorkflowContext Context { get; }
     public string Id { get; }
@@ -35,7 +34,7 @@ public class Workflow
     [JsonIgnore]
     public IStep StartStep => _steps.SingleOrDefault(a => a.Value.IsFirstStep).Value;
     [JsonInclude]
-    public IStep CurrentStep { get => currentStep ?? StartStep; internal set => currentStep = value; }
+    public IStep CurrentStep { get; internal set; }
     public void AddSteps(params IEnumerable<IStep> steps)
     {
         foreach (var step in steps)
@@ -80,16 +79,23 @@ public class Workflow
     }
     private IStep? GoThroughSteps(IStep currentStep)
     {
-        while (currentStep != null)
+        while (true)
         {
             _loopDetectionPolicy?.TrackStep(currentStep.Id);
 
             if (currentStep?.State == StepState.HALTED)
                 break;
 
-            currentStep.Execute(Context);
+            var res = currentStep.Execute(Context);
+            
+            if (!res.Done)
+                break;
 
             var routes = currentStep.GetRoutes(Context);
+            if (routes is null || routes.Count() == 0)
+            {
+                break;
+            }
             foreach (var route in routes)
             {
                 if (route.Execute(Context))
@@ -112,7 +118,7 @@ public class Workflow
             this.Id,
             _steps.Select(a => a.Value.SerializeObject(Context)),
             Context.SerializeObject(),
-            CurrentStep.SerializeObject(Context)
+            CurrentStep?.SerializeObject(Context)
         );
         return JsonSerializer.Serialize(wf, new JsonSerializerOptions
         {

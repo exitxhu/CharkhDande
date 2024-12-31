@@ -44,6 +44,8 @@ public class DecisionlStep : StepBase
     public override IEnumerable<IRoute> GetRoutes(WorkflowContext context)
     {
         var route = BaseEvaluation.GetNextRoute(context, GetAllRoutes());
+        if (route is null) 
+            return default;
         return [route];
 
     }

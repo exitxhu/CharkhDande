@@ -43,6 +43,6 @@ public abstract class StepBase : IStep
 
     public virtual IEnumerable<IRoute> GetRoutes(WorkflowContext context)
     {
-        return GetAllRoutes();
+        return GetAllRoutes().Where(a => a.Evaluate(context));
     }
 }
