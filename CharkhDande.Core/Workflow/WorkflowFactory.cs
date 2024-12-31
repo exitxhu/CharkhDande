@@ -43,7 +43,7 @@ public class WorkflowFactory(IServiceProvider serviceProvider,
 
         wf.AddSteps(steps);
 
-        wf.CurrentStep = wf.GetStep(obj.CurrentStep.Id)!;
+        wf.CurrentStep = wf.GetStep(obj.CurrentStep.Id) ?? wf.StartStep;
 
         return wf;
     }
