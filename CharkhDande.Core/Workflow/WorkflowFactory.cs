@@ -1,10 +1,11 @@
 ﻿using CharkhDande.Core.Steps;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 public class WorkflowFactory(IServiceProvider serviceProvider,
-    IWorkflowResolver workflowResolver,
     IStepFactory stepFactory)
 {
     public Workflow GetGuidInstance()
@@ -19,6 +20,10 @@ public class WorkflowFactory(IServiceProvider serviceProvider,
     }
     public async Task<Workflow> FetchAsync(string id)
     {
+        using var scop = serviceProvider.CreateScope();
+
+        var workflowResolver = scop.ServiceProvider.GetService<IWorkflowResolver>();
+
         var json = await workflowResolver.FetchJsonAsync(id);
         var wf = Reconstruct(json);
         return wf;
