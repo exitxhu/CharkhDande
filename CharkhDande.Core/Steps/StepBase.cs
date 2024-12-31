@@ -23,9 +23,6 @@ public abstract class StepBase : IStep
     public IEnumerable<IRoute> GetRoutes() => Routes;
 
     public abstract string Serialize(WorkflowContext context);
-    //{
-    //    return JsonSerializer.Serialize(SerializeObject(context));
-    //}
 
     public abstract StepSerializeObject SerializeObject(WorkflowContext context);
 
@@ -33,14 +30,14 @@ public abstract class StepBase : IStep
     {
         Routes.AddRange(routes);
     }
-    //{
-    //    var obj = new StepSerializeObject
-    //    {
-    //        Id = Id,
-    //        State = State,
-    //        Routes = Routes.Select((r) => r.SerializeObject(context)),
-    //    };
 
-    //    return obj;
-    //}
+    public virtual void SetState(StepState state)
+    {
+        State = state;
+    }
+
+    public virtual void Reset(WorkflowContext context)
+    {
+        SetState(StepState.WAITING);
+    }
 }

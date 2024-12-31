@@ -47,23 +47,24 @@ public class WorkflowFactory(IServiceProvider serviceProvider,
 
         return wf;
     }
-    public Workflow CloneAndReset(string json)
+    public Workflow ReconstructAsNew(string json)
     {
         var obj = JsonSerializer.Deserialize<WorkflowSerializableObject>(json);
 
         var wf = new Workflow(serviceProvider, Guid.NewGuid().ToString());
 
-        foreach (var val in obj.Context.Properties)
-        {
-            wf.Context.Set(val.Key, val.Value);
-        }
-
         var steps = obj.Steps.Select(stepFactory.Deserialize).ToList();
 
         wf.AddSteps(steps);
 
+        foreach (var step in wf._steps)
+        {
+            step.Value.Reset(wf.Context);
+        }
+
         wf.CurrentStep = wf.StartStep;
 
+        wf.CheckState();
 
 
         return wf;

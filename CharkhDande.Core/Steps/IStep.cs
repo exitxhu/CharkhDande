@@ -20,6 +20,9 @@ public interface IStep : ICustomSerializable<StepSerializeObject>
 
     IEnumerable<IRoute> GetRoutes();
     void SetRoutes(params IEnumerable<IRoute> routes);
+    void SetState(StepState state);
+    void Reset(WorkflowContext context);
+
     public class WorkflowExecutionResult
     {
         public bool Done { get; set; }

@@ -25,9 +25,15 @@ public class EventListenerStep : StepBase
         _eventDateKey = () => $"{id}:{eventKey}";
     }
 
+    public override void Reset(WorkflowContext context)
+    {
+        context.Remove(_eventDateKey());
+
+        base.Reset(context);
+    }
     public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
-        State = StepState.RUNNING;
+        SetState(StepState.RUNNING);
         var res = new WorkflowExecutionResult
         {
 
@@ -38,7 +44,7 @@ public class EventListenerStep : StepBase
             Console.WriteLine($"Workflow {context.Get<string>(WorkflowConstants.WORKFLOW_ID)} is processing valid event: {_eventKey}");
 
             Actions.ForEach(a => a.Execute(context, initiatorMetaData));
-            State = StepState.FINISHED;
+            SetState(StepState.FINISHED);
             res.Done = true;
         }
         else
@@ -50,7 +56,7 @@ public class EventListenerStep : StepBase
             var registry = context.ServiceProvider.GetRequiredService<WorkflowRegistry>();
             registry.RegisterStep(workflowId, Id, _eventKey);
 
-            State = StepState.HALTED;
+            SetState(StepState.HALTED);
 
             Console.WriteLine($"Workflow {workflowId} is waiting for event: {_eventKey}");
             res.Done = false;

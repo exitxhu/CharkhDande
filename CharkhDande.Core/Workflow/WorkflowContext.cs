@@ -20,6 +20,10 @@ public class WorkflowContext
     {
         _properties[key] = value;
     }
+    public void Remove(string key)
+    {
+        _properties.Remove(key);
+    }
 
     public ContextSerializableObject SerializeObject()
     {

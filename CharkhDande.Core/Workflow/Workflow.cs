@@ -119,8 +119,6 @@ public class Workflow
             WriteIndented = true
         });
     }
-
-
 }
 public static class WorkflowHelper
 {
