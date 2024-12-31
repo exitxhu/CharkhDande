@@ -10,6 +10,7 @@ public class Workflow
 {
     private readonly IServiceProvider _serviceProvider;
     private ILoopDetectionPolicy? _loopDetectionPolicy = null;
+    private IStep currentStep;
     internal readonly Dictionary<string, IStep> _steps = new();
     public WorkflowContext Context { get; }
     public string Id { get; }
@@ -34,7 +35,7 @@ public class Workflow
     [JsonIgnore]
     public IStep StartStep => _steps.SingleOrDefault(a => a.Value.IsFirstStep).Value;
     [JsonInclude]
-    public IStep CurrentStep { get; internal set; }
+    public IStep CurrentStep { get => currentStep ?? StartStep; internal set => currentStep = value; }
     public void AddSteps(params IEnumerable<IStep> steps)
     {
         foreach (var step in steps)
