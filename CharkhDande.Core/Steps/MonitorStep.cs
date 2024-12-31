@@ -26,6 +26,7 @@ public class MonitorStep : StepBase
     public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
         var startTime = DateTime.UtcNow;
+        var res = new WorkflowExecutionResult(); 
         State = StepState.RUNNING;
         context.workflowHistoryWriter.Write(Id, StepHistoryType.EXECUTE_STARTED, true, "");
         bool conditionMet = false;
@@ -45,15 +46,14 @@ public class MonitorStep : StepBase
         if (conditionMet)
         {
             OnSuccessActions.ForEach(action => action.Execute(context, new InitiatorMetaData(InitiatorType.Step, Id)));
+            res.Done = true;
         }
         else
         {
             OnTimeoutActions.ForEach(action => action.Execute(context, new InitiatorMetaData(InitiatorType.Step, Id)));
+            res.Done = false;
         }
-        return new WorkflowExecutionResult
-        {
-
-        };
+        return res;
     }
     public override string Serialize(WorkflowContext context)
     {

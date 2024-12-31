@@ -36,7 +36,7 @@ public class EventListenerStep : StepBase
         SetState(StepState.RUNNING);
         var res = new WorkflowExecutionResult
         {
-
+            Done = false
         };
         var checkData = context.TryGet<object>(_eventDateKey(), out var data);
         if (checkData)
@@ -59,8 +59,6 @@ public class EventListenerStep : StepBase
             SetState(StepState.HALTED);
 
             Console.WriteLine($"Workflow {workflowId} is waiting for event: {_eventKey}");
-            res.Done = false;
-
         }
         return res;
     }

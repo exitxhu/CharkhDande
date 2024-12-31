@@ -24,16 +24,19 @@ public class DecisionlStep : StepBase
         State = StepState.RUNNING;
         var route = GetRoutes(context).FirstOrDefault();
         if (route is null)
+        {
+            SetState(StepState.HALTED);
             return new WorkflowExecutionResult
             {
-
+                Done = false
             };
+        }
         route.Execute(context);
         State = StepState.FINISHED;
 
         return new WorkflowExecutionResult
         {
-
+            Done = true
         };
     }
     public override string Serialize(WorkflowContext context)
@@ -44,7 +47,7 @@ public class DecisionlStep : StepBase
     public override IEnumerable<IRoute> GetRoutes(WorkflowContext context)
     {
         var route = BaseEvaluation.GetNextRoute(context, GetAllRoutes());
-        if (route is null) 
+        if (route is null)
             return default;
         return [route];
 

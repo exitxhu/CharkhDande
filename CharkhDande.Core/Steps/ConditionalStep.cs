@@ -27,6 +27,7 @@ public class ConditionalStep : StepBase
     public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
         State = StepState.RUNNING;
+        var res = new WorkflowExecutionResult() { Done = false };
         if (Conditions.All(c => c.Evaluate(context, initiatorMetaData)))
         {
             foreach (var action in Actions)
@@ -34,11 +35,9 @@ public class ConditionalStep : StepBase
                 action.Execute(context, initiatorMetaData);
                 State = StepState.FINISHED;
             }
+            res.Done = true;
         }
-        return new WorkflowExecutionResult
-        {
-
-        };
+        return res;
     }
     public override string Serialize(WorkflowContext context)
     {
