@@ -19,7 +19,7 @@ public class ReferenceAction : IAction
 
     public void Execute(WorkflowContext context, InitiatorMetaData initiator)
     {
-        var actionRegistry = context.ServiceProvider.GetRequiredService<ActionRegistry>();
+        var actionRegistry = context.ServiceProvider.GetRequiredService<IActionRegistry>();
         _action = actionRegistry.Resolve(_actionKey);
 
         var eval = false;

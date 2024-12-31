@@ -15,7 +15,7 @@ public class ReferenceCondition : ICondition
     //TODO: inject failure logic
     public bool Evaluate(WorkflowContext context, InitiatorMetaData initiatorMetaData)
     {
-        var conditionRegistry = context.ServiceProvider.GetRequiredService<ConditionRegistry>();
+        var conditionRegistry = context.ServiceProvider.GetRequiredService<IConditionRegistry>();
 
         _predicate ??= conditionRegistry.Resolve(_conditionKey);
         var eval = false;
