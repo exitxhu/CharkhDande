@@ -20,7 +20,7 @@ public abstract class StepBase : IStep
 
     public abstract WorkflowExecutionResult Execute(WorkflowContext context);
 
-    public IEnumerable<IRoute> GetRoutes() => Routes;
+    public virtual IEnumerable<IRoute> GetAllRoutes() => Routes;
 
     public abstract string Serialize(WorkflowContext context);
 
@@ -39,5 +39,10 @@ public abstract class StepBase : IStep
     public virtual void Reset(WorkflowContext context)
     {
         SetState(StepState.WAITING);
+    }
+
+    public virtual IEnumerable<IRoute> GetRoutes(WorkflowContext context)
+    {
+        return GetAllRoutes();
     }
 }

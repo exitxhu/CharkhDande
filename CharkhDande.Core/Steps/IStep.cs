@@ -18,7 +18,9 @@ public interface IStep : ICustomSerializable<StepSerializeObject>
     public string StepType { get; }
     bool IsFirstStep { get; set; }
 
-    IEnumerable<IRoute> GetRoutes();
+    IEnumerable<IRoute> GetAllRoutes();
+    IEnumerable<IRoute> GetRoutes(WorkflowContext context);
+
     void SetRoutes(params IEnumerable<IRoute> routes);
     void SetState(StepState state);
     void Reset(WorkflowContext context);

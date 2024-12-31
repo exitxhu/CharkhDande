@@ -1,5 +1,6 @@
 ﻿using CharkhDande.Core.Steps;
 
+using System.Runtime;
 using System.Text.Json;
 
 using static IStep;
@@ -21,7 +22,7 @@ public class DecisionlStep : StepBase
     public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
         State = StepState.RUNNING;
-        var route = BaseEvaluation.GetNextRoute(context, GetRoutes());
+        var route = GetRoutes(context).FirstOrDefault();
         if (route is null)
             return new WorkflowExecutionResult
             {
@@ -40,12 +41,18 @@ public class DecisionlStep : StepBase
         return JsonSerializer.Serialize(SerializeObject(context));
     }
 
+    public override IEnumerable<IRoute> GetRoutes(WorkflowContext context)
+    {
+        var route = BaseEvaluation.GetNextRoute(context, GetAllRoutes());
+        return [route];
+
+    }
     public override StepSerializeObject SerializeObject(WorkflowContext context)
     {
         return new StepSerializeObject
         {
             Id = Id,
-            Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
+            Routes = GetAllRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             IsFirstStep = IsFirstStep,
             State = State,
             Type = StepType,
@@ -95,7 +102,7 @@ public class DecisionlStepDeserializer() : IStepDeserializer<DecisionlStep>
         var type = obj.MetaData["DecisionOutputType#"];
 
         var res = new DecisionlStep(obj.Id, Enum.Parse<DecisionOutputType>(type.Value));
-        
+
         res.IsFirstStep = obj.IsFirstStep;
 
         res.State = obj.State;

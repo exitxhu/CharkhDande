@@ -75,7 +75,7 @@ public class EventListenerStep : StepBase
         return new StepSerializeObject
         {
             Id = Id,
-            Routes = GetRoutes()?.Select(a => a.SerializeObject(context))!,
+            Routes = GetAllRoutes()?.Select(a => a.SerializeObject(context))!,
             State = State,
             IsFirstStep = IsFirstStep,
             Type = StepType,

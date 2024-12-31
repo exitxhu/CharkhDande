@@ -62,7 +62,7 @@ public class ConditionalStep : StepBase
         return new StepSerializeObject
         {
             Id = Id,
-            Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
+            Routes = GetAllRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             State = State,
             IsFirstStep = IsFirstStep,
             Type = StepType,

@@ -52,7 +52,7 @@ public class Workflow
 
         CurrentStep.Execute(Context);
 
-        var routes = CurrentStep.GetRoutes();
+        var routes = CurrentStep.GetRoutes(Context);
 
         foreach (var route in routes)
         {
@@ -89,7 +89,7 @@ public class Workflow
 
             currentStep.Execute(Context);
 
-            var routes = currentStep.GetRoutes();
+            var routes = currentStep.GetRoutes(Context);
             foreach (var route in routes)
             {
                 if (route.Execute(Context))

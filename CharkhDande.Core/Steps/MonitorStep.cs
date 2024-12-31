@@ -80,7 +80,7 @@ public class MonitorStep : StepBase
         return new StepSerializeObject()
         {
             State = State,
-            Routes = GetRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
+            Routes = GetAllRoutes()?.Select(a => a.SerializeObject(context)).ToArray(),
             Id = Id,
             IsFirstStep = IsFirstStep,
             Type = StepType,
