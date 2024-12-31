@@ -82,4 +82,9 @@ public class WFRepo : IWorkflowResolver
     {
         return Store.FirstOrDefault(a => a.Key == id).Value;
     }
+
+    public Task<string> FetchJsonAsync(string id)
+    {
+        throw new NotImplementedException();
+    }
 }
