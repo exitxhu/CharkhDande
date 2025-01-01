@@ -83,11 +83,11 @@ public class ConditionalStepDeserializer() : IStepDeserializer<ConditionalStep>
         {
             if (data.Key.StartsWith("Actions#"))
             {
-                res.Actions.Add(ReferenceAction.Deserialize(data.Value.Value));
+                res.Actions.Add(ReferenceAction.Deserialize(data.Value.JSON));
             }
             else if (data.Key.StartsWith("Conditions#"))
             {
-                res.Conditions.Add(ReferenceCondition.Deserialize(data.Value.Value));
+                res.Conditions.Add(ReferenceCondition.Deserialize(data.Value.JSON));
             }
         }
 

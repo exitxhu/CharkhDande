@@ -68,10 +68,15 @@ public record StepSerializeObject
     public Dictionary<string, ObjectMetadata> MetaData { get; set; } = new();
 }
 [method: JsonConstructor]
-public record ObjectMetadata(string Value, string Type)
+public record ObjectMetadata
 {
-    public ObjectMetadata(object obj) : this(JsonSerializer.Serialize(obj), obj.GetType().FullName)
+    public string JSON { get; private set; }
+    public string FQDN { get; private set; }
+    public ObjectMetadata(object obj)
     {
+        JSON = JsonSerializer.Serialize(obj);
+
+        FQDN = obj.GetType().AssemblyQualifiedName!;
 
     }
     public object GetObject()
@@ -79,11 +84,11 @@ public record ObjectMetadata(string Value, string Type)
 
         try
         {
-            return JsonSerializer.Deserialize(Value, System.Type.GetType(Type));
+            return JsonSerializer.Deserialize(JSON, Type.GetType(FQDN)!)!;
         }
         catch (Exception ex)
         {
-            throw new Exception($"{Value}:{Type}", ex);
+            throw new Exception($"{JSON}:{FQDN}", ex);
         }
 
     }

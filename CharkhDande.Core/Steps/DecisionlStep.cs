@@ -61,7 +61,7 @@ public class DecisionlStep : StepBase
             IsFirstStep = IsFirstStep,
             State = State,
             Type = StepType,
-            MetaData = { { "DecisionOutputType#", new(type.ToString(), typeof(DecisionOutputType).FullName) } }
+            MetaData = { { "DecisionOutputType#", new(type) } }
         };
     }
 }
@@ -106,7 +106,7 @@ public class DecisionlStepDeserializer() : IStepDeserializer<DecisionlStep>
     {
         var type = obj.MetaData["DecisionOutputType#"];
 
-        var res = new DecisionlStep(obj.Id, Enum.Parse<DecisionOutputType>(type.Value));
+        var res = new DecisionlStep(obj.Id, Enum.Parse<DecisionOutputType>(type.JSON));
 
         res.IsFirstStep = obj.IsFirstStep;
 
