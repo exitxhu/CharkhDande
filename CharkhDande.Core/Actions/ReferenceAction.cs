@@ -55,7 +55,7 @@ public class ReferenceAction : IAction
         var metadata = JsonSerializer.Deserialize<ActionSerializableObject>(serializedData);
         if (metadata == null)
             throw new InvalidOperationException("Invalid serialized data.");
-        var par = metadata.Paramateres?.Select(a => JsonSerializer.Deserialize(a.Value, Type.GetType(a.Type)));
+        var par = metadata.Paramateres?.Select(a => a.GetObject());
 
         return new ReferenceAction(metadata.Key, par);
     }

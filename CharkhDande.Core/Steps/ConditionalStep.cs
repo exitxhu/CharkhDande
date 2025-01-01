@@ -51,12 +51,12 @@ public class ConditionalStep : StepBase
         for (int i = 0; i < Conditions.Count; i++)
         {
             var condition = Conditions[i];
-            meta.Add("Conditions#" + (i + 1), new(condition.Serialize(context), typeof(ConditionSerializableObject).FullName));
+            meta.Add("Conditions#" + (i + 1), new(condition.SerializeObject(context)));
         }
         for (int i = 0; i < Actions.Count; i++)
         {
             var action = Actions[i];
-            meta.Add("Actions#" + (i + 1), new(action.Serialize(context), typeof(ActionSerializableObject).FullName));
+            meta.Add("Actions#" + (i + 1), new(action.SerializeObject(context)));
         }
         return new StepSerializeObject
         {

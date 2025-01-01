@@ -29,7 +29,7 @@ public class WorkflowContext
     {
         return new ContextSerializableObject()
         {
-            Properties = _properties,
+            Properties = _properties.Select(a => new KeyValuePair<string, ObjectMetadata>(a.Key, new ObjectMetadata(a.Value))).ToDictionary(),
         };
     }
 
@@ -42,6 +42,6 @@ public class WorkflowContext
 
 public record ContextSerializableObject
 {
-    public Dictionary<string, object> Properties { get; set; }
+    public Dictionary<string, ObjectMetadata> Properties { get; set; }
     public List<StepHistoryEntry> History { get; set; }
 }

@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
+using System.Text.Json;
 
 Console.WriteLine("Hello, World!");
 var services = new ServiceCollection();
@@ -22,15 +23,11 @@ services.AddCharkhDande(a => a.AddKesho(services));
 
 services.AddSingleton<IWorkflowResolver>(a => a.GetRequiredService<WFRepo>());
 
-services.AddSingleton<ActionRegistry>();
-services.AddSingleton<ConditionRegistry>();
-
-
 
 // Build the service provider
 var serviceProvider = services.BuildServiceProvider();
-var actionRegistry = serviceProvider.GetRequiredService<ActionRegistry>();
-var conditionRegistry = serviceProvider.GetRequiredService<ConditionRegistry>();
+var actionRegistry = serviceProvider.GetRequiredService<IActionRegistry>();
+var conditionRegistry = serviceProvider.GetRequiredService<IConditionRegistry>();
 
 var emailActionKey = "sendEmailOnCondition";
 actionRegistry.Register(emailActionKey, (ctx, init) =>
@@ -40,8 +37,8 @@ actionRegistry.Register(emailActionKey, (ctx, init) =>
     if (T)
         ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("email someone");
 });
-
-actionRegistry.Register("jobAction", (ctx, init) => Console.WriteLine("Job completed successfully."));
+var param = new object[] { new Dictionary<string, double> { { "asd", 150.00d } } };
+actionRegistry.Register("jobAction", (ctx, init, param) => Console.WriteLine("Job completed successfully."));
 actionRegistry.Register("jobTimeOutAction", (ctx, init) => Console.WriteLine("Job completion timed out."));
 conditionRegistry.Register("docIdEven", (ctx, init) =>
 {
@@ -54,7 +51,7 @@ var lambdaAction = new ReferenceAction(emailActionKey);
 
 var eventStep = new EventListenerStep("eventStep", "accept_topic");
 
-eventStep.Actions.Add(new ReferenceAction("jobAction"));
+eventStep.Actions.Add(new ReferenceAction("jobAction", param));
 
 var monitorStep = new MonitorStep("monitor 1")
 {
@@ -63,7 +60,7 @@ var monitorStep = new MonitorStep("monitor 1")
     Timeout = TimeSpan.FromSeconds(10),
     OnSuccessActions = new List<IAction>
     {
-        new ReferenceAction("jobAction"),
+        new ReferenceAction("jobAction",param),
     },
     OnTimeoutActions = new List<IAction>
     {
@@ -157,12 +154,12 @@ Task.Run(workflow.Run),
 
 Task.Run(async () =>
 {
-    await Task.Delay(5000);
+    await Task.Delay(50);
     workflow.Context.Set("jobCompleted", true);
 }),
 Task.Run(async () =>
 {
-    await Task.Delay(10000);
+    await Task.Delay(2000);
     evn.PushEvent("accept_topic", "something");
 })
 };
@@ -253,8 +250,8 @@ public class WFRepo : IWorkflowResolver
         return Store.FirstOrDefault(a => a.Key == id).Value;
     }
 
-    public Task<string> FetchJsonAsync(string id)
+    public async Task<string> FetchJsonAsync(string id)
     {
-        throw new NotImplementedException();
+        return Store.FirstOrDefault(a => a.Key == id).Value.ExportWorkFlow();
     }
 }

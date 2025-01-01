@@ -1,6 +1,7 @@
 ﻿using CharkhDande.Core;
 
 using System.Security.AccessControl;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 
@@ -69,8 +70,21 @@ public record StepSerializeObject
 [method: JsonConstructor]
 public record ObjectMetadata(string Value, string Type)
 {
-    public ObjectMetadata(object obj) : this(obj.ToString(), obj.GetType().FullName)
+    public ObjectMetadata(object obj) : this(JsonSerializer.Serialize(obj), obj.GetType().FullName)
     {
+
+    }
+    public object GetObject()
+    {
+
+        try
+        {
+            return JsonSerializer.Deserialize(Value, System.Type.GetType(Type));
+        }
+        catch (Exception ex)
+        {
+            return default;
+        }
 
     }
 }

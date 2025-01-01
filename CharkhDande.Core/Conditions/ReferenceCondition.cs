@@ -58,7 +58,7 @@ public class ReferenceCondition : ICondition
         var metadata = JsonSerializer.Deserialize<ConditionSerializableObject>(serializedData);
         if (metadata == null)
             throw new InvalidOperationException("Invalid serialized data.");
-        var par = metadata.Paramateres?.Select(a => JsonSerializer.Deserialize(a.Value, Type.GetType(a.Type)));
+        var par = metadata.Paramateres?.Select(a => a.GetObject());
 
         return new ReferenceCondition(metadata.Key, par);
     }

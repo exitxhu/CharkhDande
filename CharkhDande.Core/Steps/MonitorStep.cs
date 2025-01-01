@@ -67,15 +67,15 @@ public class MonitorStep : StepBase
         for (int i = 0; i < OnSuccessActions.Count; i++)
         {
             var action = OnSuccessActions[i];
-            meta.Add("OnSuccessActions#" + (i + 1), new(action.Serialize(context), typeof(ActionSerializableObject).FullName));
+            meta.Add("OnSuccessActions#" + (i + 1), new(action.SerializeObject(context)));
         }
         for (int i = 0; i < OnTimeoutActions.Count; i++)
         {
             var action = OnTimeoutActions[i];
-            meta.Add("OnTimeoutActions#" + (i + 1), new(action.Serialize(context), typeof(ActionSerializableObject).FullName));
+            meta.Add("OnTimeoutActions#" + (i + 1), new(action.SerializeObject(context)));
         }
-        meta.Add("Timeout#", new(Timeout.ToString(), typeof(TimeSpan).FullName));
-        meta.Add("PollingInterval#", new ObjectMetadata(PollingInterval.ToString(), typeof(TimeSpan).FullName));
+        meta.Add("Timeout#", new(Timeout));
+        meta.Add("PollingInterval#", new ObjectMetadata(PollingInterval));
 
         return new StepSerializeObject()
         {
