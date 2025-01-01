@@ -9,12 +9,14 @@ using System.Text.Json;
 
 public class ReferenceAction : IAction
 {
-    private Action<WorkflowContext, InitiatorMetaData> _action;
+    private Action<WorkflowContext, InitiatorMetaData, IEnumerable<object>?> _action;
     private readonly string _actionKey;
+    private readonly IEnumerable<object> parameters;
 
-    public ReferenceAction(string actionKey)
+    public ReferenceAction(string actionKey, params IEnumerable<object> parameters)
     {
         _actionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
+        this.parameters = parameters;
     }
 
     public void Execute(WorkflowContext context, InitiatorMetaData initiator)
@@ -26,7 +28,7 @@ public class ReferenceAction : IAction
         var desc = string.Empty;
         try
         {
-            _action(context, initiator);
+            _action(context, initiator, parameters);
             desc = $"{_actionKey} successfully executed";
             eval = true;
         }

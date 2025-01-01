@@ -33,7 +33,7 @@ public class RegisteryTests
 
         var condition = conditionReg.Resolve(Configurator.ConditionTrue);
 
-        var t = condition.Invoke(default, default);
+        var t = condition.Invoke(default, default, default);
 
         t.Should().Be(true);
 

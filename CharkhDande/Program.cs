@@ -7,6 +7,7 @@ using CharkhDande.Kesho;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 
 Console.WriteLine("Hello, World!");

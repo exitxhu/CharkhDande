@@ -6,11 +6,14 @@ using System.Text.Json;
 
 public class ReferenceCondition : ICondition
 {
-    private Func<WorkflowContext, InitiatorMetaData, bool> _predicate = default!;
+    private Func<WorkflowContext, InitiatorMetaData, IEnumerable<object>?, bool> _predicate = default!;
     private readonly string _conditionKey;
-    public ReferenceCondition(string actionKey)
+    private readonly IEnumerable<object> parameters;
+
+    public ReferenceCondition(string actionKey, params IEnumerable<object> parameters)
     {
         _conditionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
+        this.parameters = parameters;
     }
     //TODO: inject failure logic
     public bool Evaluate(WorkflowContext context, InitiatorMetaData initiatorMetaData)
@@ -22,7 +25,7 @@ public class ReferenceCondition : ICondition
         var desc = string.Empty;
         try
         {
-            eval = _predicate(context, initiatorMetaData);
+            eval = _predicate(context, initiatorMetaData, parameters);
             desc = $"{_predicate} successfully evaluated";
         }
         catch (Exception ex)
