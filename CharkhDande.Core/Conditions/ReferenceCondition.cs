@@ -60,6 +60,12 @@ public class ReferenceCondition : ICondition
             throw new InvalidOperationException("Invalid serialized data.");
         var par = metadata.Paramateres?.Select(a => a.GetObject());
 
+        return Deserialize(metadata);
+    }
+    public static ReferenceCondition Deserialize(ConditionSerializableObject metadata)
+    {
+        var par = metadata.Paramateres?.Select(a => a.GetObject());
+
         return new ReferenceCondition(metadata.Key, par);
     }
 }

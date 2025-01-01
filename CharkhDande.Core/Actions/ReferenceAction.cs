@@ -55,9 +55,8 @@ public class ReferenceAction : IAction
         var metadata = JsonSerializer.Deserialize<ActionSerializableObject>(serializedData);
         if (metadata == null)
             throw new InvalidOperationException("Invalid serialized data.");
-        var par = metadata.Paramateres?.Select(a => a.GetObject());
 
-        return new ReferenceAction(metadata.Key, par);
+        return Deserialize(metadata);
     }
 
     public ActionSerializableObject SerializeObject(WorkflowContext context)
@@ -67,6 +66,13 @@ public class ReferenceAction : IAction
             Key = _actionKey,
             Paramateres = parameters?.Select(a => new ObjectMetadata(a))
         };
+    }
+
+    internal static ReferenceAction Deserialize(ActionSerializableObject metadata)
+    {
+        var par = metadata.Paramateres?.Select(a => a.GetObject());
+
+        return new ReferenceAction(metadata.Key, par);
     }
 }
 public record InitiatorMetaData(InitiatorType InitiatorType, string InitiatorId);

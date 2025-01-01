@@ -75,11 +75,11 @@ public class ConditionalRouteDeserializer() : IRouteDeserializer<ConditionalRout
 
         foreach (var item in obj.Actions)
         {
-            res.Actions.Add(new ReferenceAction(item.Key));
+            res.Actions.Add(ReferenceAction.Deserialize(item));
         }
         foreach (var item in obj.Conditions)
         {
-            res.Conditions.Add(new ReferenceCondition(item.Key));
+            res.Conditions.Add(ReferenceCondition.Deserialize(item));
         }
 
         res.NextStep = obj.NextStepId;
