@@ -64,7 +64,7 @@ public class ReferenceCondition : ICondition
     }
     public static ReferenceCondition Deserialize(ConditionSerializableObject metadata)
     {
-        var par = metadata.Paramateres?.Select(a => a.GetObject());
+        var par = metadata.Paramateres?.Select(a => a.GetObject()).ToList();
 
         return new ReferenceCondition(metadata.Key, par);
     }

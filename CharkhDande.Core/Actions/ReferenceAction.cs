@@ -70,7 +70,7 @@ public class ReferenceAction : IAction
 
     internal static ReferenceAction Deserialize(ActionSerializableObject metadata)
     {
-        var par = metadata.Paramateres?.Select(a => a.GetObject());
+        var par = metadata.Paramateres?.Select(a => a.GetObject()).ToList();
 
         return new ReferenceAction(metadata.Key, par);
     }
