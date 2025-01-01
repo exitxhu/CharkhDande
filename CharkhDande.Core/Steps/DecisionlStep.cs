@@ -106,7 +106,7 @@ public class DecisionlStepDeserializer() : IStepDeserializer<DecisionlStep>
     {
         var type = obj.MetaData["DecisionOutputType#"];
 
-        var res = new DecisionlStep(obj.Id, Enum.Parse<DecisionOutputType>(type.JSON));
+        var res = new DecisionlStep(obj.Id, Enum.Parse<DecisionOutputType>(type.Value));
 
         res.IsFirstStep = obj.IsFirstStep;
 

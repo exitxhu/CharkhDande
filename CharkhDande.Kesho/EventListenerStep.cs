@@ -88,7 +88,7 @@ public class EventListenerStepDeserializer : IStepDeserializer<EventListenerStep
     {
         var t = obj.MetaData["EventKey#"];
 
-        var res = new EventListenerStep(obj.Id, t.JSON);
+        var res = new EventListenerStep(obj.Id, t.Value);
 
         res.IsFirstStep = obj.IsFirstStep;
 

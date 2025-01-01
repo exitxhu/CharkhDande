@@ -100,11 +100,11 @@ public class MonitorStepDeserializer() : IStepDeserializer<MonitorStep>
         {
             if (data.Key.StartsWith("OnSuccessActions#"))
             {
-                res.OnSuccessActions.Add(ReferenceAction.Deserialize(data.Value.JSON));
+                res.OnSuccessActions.Add(ReferenceAction.Deserialize(data.Value.Value));
             }
             else if (data.Key.StartsWith("OnTimeoutActions#"))
             {
-                res.OnTimeoutActions.Add(ReferenceAction.Deserialize(data.Value.JSON));
+                res.OnTimeoutActions.Add(ReferenceAction.Deserialize(data.Value.Value));
             }
             else if (data.Key.StartsWith("Timeout#"))
             {
