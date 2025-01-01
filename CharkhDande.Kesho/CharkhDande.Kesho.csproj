@@ -14,6 +14,12 @@
   <ItemGroup>
     <ProjectReference Include="..\CharkhDande.Core\CharkhDande.Core.csproj" />
   </ItemGroup>
+  
+  <Target Name="CleanNuGetPackages" BeforeTargets="Build">
+    <RemoveDir Directories="bin\packages" Condition="Exists('bin\packages')" />
+    <RemoveDir Directories="obj\packages" Condition="Exists('obj\packages')" />
+  </Target>
+  
   <Target Name="PostBuildPush" AfterTargets="Pack">
     <Exec Command="powershell ../nuget.ps1" />
   </Target>

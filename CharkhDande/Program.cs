@@ -37,7 +37,7 @@ actionRegistry.Register(emailActionKey, (ctx, init) =>
     if (T)
         ctx.ServiceProvider.GetRequiredService<IMessageService>().SendMessage("email someone");
 });
-var param = new object[] { new Dictionary<string, double> { { "asd", 150.00d } } };
+var param = new object[] { ThreadState.Running, new Dictionary<string, double> { { "asd", 150.00d } } };
 actionRegistry.Register("jobAction", (ctx, init, param) => Console.WriteLine("Job completed successfully."));
 actionRegistry.Register("jobTimeOutAction", (ctx, init) => Console.WriteLine("Job completion timed out."));
 conditionRegistry.Register("docIdEven", (ctx, init) =>
@@ -170,7 +170,11 @@ var histores = workflow.GetHistory();
 
 var js = workflow.ExportWorkFlow();
 
+
+var wwf = factory.Reconstruct(js);
+
 var t = 0;
+
 public interface IMessageService
 {
     void SendMessage(string message);

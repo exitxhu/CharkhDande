@@ -26,7 +26,7 @@ public class MonitorStep : StepBase
     public override WorkflowExecutionResult Execute(WorkflowContext context)
     {
         var startTime = DateTime.UtcNow;
-        var res = new WorkflowExecutionResult(); 
+        var res = new WorkflowExecutionResult();
         State = StepState.RUNNING;
         context.workflowHistoryWriter.Write(Id, StepHistoryType.EXECUTE_STARTED, true, "");
         bool conditionMet = false;
@@ -108,11 +108,11 @@ public class MonitorStepDeserializer() : IStepDeserializer<MonitorStep>
             }
             else if (data.Key.StartsWith("Timeout#"))
             {
-                res.Timeout = TimeSpan.Parse(data.Value.Value.ToString());
+                res.Timeout = (TimeSpan)data.Value.GetObject();
             }
             else if (data.Key.StartsWith("PollingInterval#"))
             {
-                res.PollingInterval = TimeSpan.Parse(data.Value.Value.ToString());
+                res.PollingInterval = (TimeSpan)data.Value.GetObject();
 
             }
         }

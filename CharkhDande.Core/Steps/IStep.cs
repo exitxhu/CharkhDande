@@ -83,7 +83,7 @@ public record ObjectMetadata(string Value, string Type)
         }
         catch (Exception ex)
         {
-            return default;
+            throw new Exception($"{Value}:{Type}", ex);
         }
 
     }

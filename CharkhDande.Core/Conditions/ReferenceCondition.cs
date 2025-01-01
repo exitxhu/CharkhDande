@@ -13,7 +13,7 @@ public class ReferenceCondition : ICondition
     public ReferenceCondition(string actionKey, params IEnumerable<object> parameters)
     {
         _conditionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
-        this.parameters = parameters;
+        this.parameters = parameters ?? Enumerable.Empty<object>();
     }
     //TODO: inject failure logic
     public bool Evaluate(WorkflowContext context, InitiatorMetaData initiatorMetaData)

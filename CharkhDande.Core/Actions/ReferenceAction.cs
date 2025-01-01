@@ -18,7 +18,7 @@ public class ReferenceAction : IAction
     public ReferenceAction(string actionKey, params IEnumerable<object> parameters)
     {
         _actionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
-        this.parameters = parameters;
+        this.parameters = parameters ?? Enumerable.Empty<object>();
     }
 
     public void Execute(WorkflowContext context, InitiatorMetaData initiator)

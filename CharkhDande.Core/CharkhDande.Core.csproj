@@ -9,12 +9,18 @@
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>Azarakhsh.$(AssemblyName)</PackageId>
+    <PackageOutputPath>$(SolutionDir)packages</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
   </ItemGroup>
-  
+
+  <Target Name="CleanNuGetPackages" BeforeTargets="Build">
+    <RemoveDir Directories="bin\packages" Condition="Exists('bin\packages')" />
+    <RemoveDir Directories="obj\packages" Condition="Exists('obj\packages')" />
+  </Target>
+
   <Target Name="PostBuildPush" AfterTargets="Pack">
     <Exec Command="powershell ../nuget.ps1" />
   </Target>
