@@ -7,6 +7,8 @@ using System;
 using System;
 using System.Text.Json;
 
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 public class ReferenceAction : IAction
 {
     private Action<WorkflowContext, InitiatorMetaData, IEnumerable<object>?> _action;
@@ -51,18 +53,19 @@ public class ReferenceAction : IAction
     public static ReferenceAction Deserialize(string serializedData)
     {
         var metadata = JsonSerializer.Deserialize<ActionSerializableObject>(serializedData);
-
         if (metadata == null)
             throw new InvalidOperationException("Invalid serialized data.");
+        var par = metadata.Paramateres?.Select(a => JsonSerializer.Deserialize(a.Value, Type.GetType(a.Type)));
 
-        return new ReferenceAction(metadata.Key);
+        return new ReferenceAction(metadata.Key, par);
     }
 
     public ActionSerializableObject SerializeObject(WorkflowContext context)
     {
         return new ActionSerializableObject
         {
-            Key = _actionKey
+            Key = _actionKey,
+            Paramateres = parameters?.Select(a => new ObjectMetadata(a))
         };
     }
 }

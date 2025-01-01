@@ -1,6 +1,6 @@
 ﻿using CharkhDande.Core;
 
-public interface IAction: ICustomSerializable<ActionSerializableObject>
+public interface IAction : ICustomSerializable<ActionSerializableObject>
 {
     void Execute(WorkflowContext context, InitiatorMetaData initiator);
 }
@@ -8,4 +8,5 @@ public interface IAction: ICustomSerializable<ActionSerializableObject>
 public class ActionSerializableObject
 {
     public string Key { get; set; }
+    public IEnumerable<ObjectMetadata>? Paramateres { get; set; }
 }

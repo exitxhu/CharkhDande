@@ -64,12 +64,12 @@ public record StepSerializeObject
     public IEnumerable<RouteSerializableObject> Routes { get; set; }
     public string Type { get; set; }
     public bool IsFirstStep { get; set; }
-    public Dictionary<string, StepMetadata> MetaData { get; set; } = new();
+    public Dictionary<string, ObjectMetadata> MetaData { get; set; } = new();
 }
-[method: JsonConstructorAttribute]
-public record StepMetadata(string Value, string Type)
+[method: JsonConstructor]
+public record ObjectMetadata(string Value, string Type)
 {
-    public StepMetadata(object obj) : this(obj.ToString(), obj.GetType().FullName)
+    public ObjectMetadata(object obj) : this(obj.ToString(), obj.GetType().FullName)
     {
 
     }

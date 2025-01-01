@@ -62,7 +62,7 @@ public class MonitorStep : StepBase
 
     public override StepSerializeObject SerializeObject(WorkflowContext context)
     {
-        var meta = new Dictionary<string, StepMetadata>();
+        var meta = new Dictionary<string, ObjectMetadata>();
 
         for (int i = 0; i < OnSuccessActions.Count; i++)
         {
@@ -75,7 +75,7 @@ public class MonitorStep : StepBase
             meta.Add("OnTimeoutActions#" + (i + 1), new(action.Serialize(context), typeof(ActionSerializableObject).FullName));
         }
         meta.Add("Timeout#", new(Timeout.ToString(), typeof(TimeSpan).FullName));
-        meta.Add("PollingInterval#", new StepMetadata(PollingInterval.ToString(), typeof(TimeSpan).FullName));
+        meta.Add("PollingInterval#", new ObjectMetadata(PollingInterval.ToString(), typeof(TimeSpan).FullName));
 
         return new StepSerializeObject()
         {
@@ -100,13 +100,11 @@ public class MonitorStepDeserializer() : IStepDeserializer<MonitorStep>
         {
             if (data.Key.StartsWith("OnSuccessActions#"))
             {
-                var t = JsonSerializer.Deserialize<ActionSerializableObject>(data.Value.Value);
-                res.OnSuccessActions.Add(new ReferenceAction(t.Key));
+                res.OnSuccessActions.Add(ReferenceAction.Deserialize(data.Value.Value));
             }
             else if (data.Key.StartsWith("OnTimeoutActions#"))
             {
-                var t = JsonSerializer.Deserialize<ActionSerializableObject>(data.Value.Value);
-                res.OnTimeoutActions.Add(new ReferenceAction(t.Key));
+                res.OnTimeoutActions.Add(ReferenceAction.Deserialize(data.Value.Value));
             }
             else if (data.Key.StartsWith("Timeout#"))
             {

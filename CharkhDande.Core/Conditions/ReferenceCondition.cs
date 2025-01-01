@@ -49,7 +49,17 @@ public class ReferenceCondition : ICondition
     {
         return new ConditionSerializableObject
         {
-            Key = _conditionKey
+            Key = _conditionKey,
+            Paramateres = parameters?.Select(a => new ObjectMetadata(a))
         };
+    }
+    public static ReferenceCondition Deserialize(string serializedData)
+    {
+        var metadata = JsonSerializer.Deserialize<ConditionSerializableObject>(serializedData);
+        if (metadata == null)
+            throw new InvalidOperationException("Invalid serialized data.");
+        var par = metadata.Paramateres?.Select(a => JsonSerializer.Deserialize(a.Value, Type.GetType(a.Type)));
+
+        return new ReferenceCondition(metadata.Key, par);
     }
 }

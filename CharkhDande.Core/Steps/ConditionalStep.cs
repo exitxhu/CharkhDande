@@ -46,7 +46,7 @@ public class ConditionalStep : StepBase
 
     public override StepSerializeObject SerializeObject(WorkflowContext context)
     {
-        var meta = new Dictionary<string, StepMetadata>();
+        var meta = new Dictionary<string, ObjectMetadata>();
 
         for (int i = 0; i < Conditions.Count; i++)
         {
@@ -83,13 +83,11 @@ public class ConditionalStepDeserializer() : IStepDeserializer<ConditionalStep>
         {
             if (data.Key.StartsWith("Actions#"))
             {
-                var t = JsonSerializer.Deserialize<ActionSerializableObject>(data.Value.Value);
-                res.Actions.Add(new ReferenceAction(t.Key));
+                res.Actions.Add(ReferenceAction.Deserialize(data.Value.Value));
             }
-            else if (data.Key.StartsWith("Conditions"))
+            else if (data.Key.StartsWith("Conditions#"))
             {
-                var t = JsonSerializer.Deserialize<ConditionSerializableObject>(data.Value.Value);
-                res.Conditions.Add(new ReferenceCondition(t.Key));
+                res.Conditions.Add(ReferenceCondition.Deserialize(data.Value.Value));
             }
         }
 

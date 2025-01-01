@@ -7,4 +7,5 @@ public interface ICondition : ICustomSerializable<ConditionSerializableObject>
 public class ConditionSerializableObject
 {
     public string Key { get; set; }
+    public IEnumerable<ObjectMetadata>? Paramateres { get; set; }
 }
